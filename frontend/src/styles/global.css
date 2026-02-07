@@ -310,3 +310,152 @@ select {
         grid-template-columns: 1fr;
     }
 }
+
+/* Accessibility: High Contrast mode */
+.high-contrast {
+    --color-bg-primary: #0b0b0b;
+    --color-bg-secondary: #121212;
+    --color-bg-tertiary: #1a1a1a;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #e5e5e5;
+    --color-text-tertiary: #cfcfcf;
+    --color-border: #3a3a3a;
+    --color-border-dark: #5a5a5a;
+    --color-primary: #00d1ff;
+    --color-primary-dark: #00a3cc;
+}
+
+/* Mobile-friendly bigger touch targets */
+.touch-targets button,
+.touch-targets .assistant-btn,
+.touch-targets .ui-button,
+.touch-targets .ui-input {
+    min-height: 44px; /* WCAG touch target */
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-lg);
+}
+
+/* Assistant styles */
+.assistant-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn var(--transition) ease-in-out;
+}
+
+.assistant-modal {
+    width: min(720px, 92vw);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    padding: var(--space-6);
+}
+
+.assistant-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}
+
+.assistant-avatar {
+    font-size: 2rem;
+}
+
+.assistant-title {
+    flex: 1;
+    margin-left: var(--space-3);
+    font-weight: var(--font-semibold);
+}
+
+.assistant-close {
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-full);
+    width: 36px;
+    height: 36px;
+}
+
+.assistant-caption {
+    background: var(--color-bg-tertiary);
+    padding: var(--space-3);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-4);
+}
+
+.assistant-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+}
+
+.assistant-btn {
+    background: var(--color-primary);
+    color: var(--color-text-white);
+    border-radius: var(--radius);
+    padding: var(--space-3) var(--space-4);
+    font-weight: var(--font-medium);
+}
+
+.assistant-language {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+}
+
+.assistant-lang-buttons button {
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius);
+    padding: var(--space-2) var(--space-3);
+    margin-right: var(--space-2);
+}
+
+.assistant-lang-buttons button.active {
+    background: var(--color-primary);
+    color: var(--color-text-white);
+}
+
+/* Guided attendance banner */
+.guided-banner {
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin: var(--space-4) 0;
+}
+
+.guided-name {
+    font-size: var(--text-3xl);
+    font-weight: var(--font-semibold);
+    margin-bottom: var(--space-3);
+}
+
+.guided-actions {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.camera-box {
+    position: relative;
+    margin: var(--space-4) 0;
+}
+
+.camera-video {
+    width: 100%;
+    max-width: 520px;
+    border-radius: var(--radius-md);
+}
+
+.camera-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 520px;
+    border-radius: var(--radius-md);
+}

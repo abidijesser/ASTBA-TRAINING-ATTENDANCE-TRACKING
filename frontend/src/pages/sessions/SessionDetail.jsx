@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { sessionAPI } from '../../api/sessions';
+import { usePreferences } from '../../context/PreferenceContext';
 import { useAuth } from '../../context/AuthContext';
 import { useDialog } from '../../context/DialogContext';
 import { Button, Card } from '../../components/ui';
@@ -16,8 +17,21 @@ const SessionDetail = () => {
     const [attendanceMap, setAttendanceMap] = useState({});
     const [savingAttendance, setSavingAttendance] = useState(false);
     const [finishingSession, setFinishingSession] = useState(false);
+    // Guided mode state
+    const [guidedMode, setGuidedMode] = useState(false);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const currentIndexRef = useRef(0);
+    const [cameraOn, setCameraOn] = useState(false);
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const handsRef = useRef(null);
+    const rafRef = useRef(null);
+    const gestureCooldownRef = useRef(0);
+    const advanceTimerRef = useRef(null);
+    const advancingRef = useRef(false);
 
     const { user } = useAuth();
+    const { prefs, t, setPrefs } = usePreferences();
 
     useEffect(() => {
         fetchSessionData();
@@ -77,6 +91,14 @@ const SessionDetail = () => {
             // The sessionAPI.markAttendance helper already wraps the argument in { attendances: ... }
             await sessionAPI.markAttendance(id, attendanceData);
             showSuccess('Présences enregistrées avec succès !');
+            try {
+                if (prefs.voiceEnabled) {
+                    const utter = new SpeechSynthesisUtterance(t('presenceRecorded'));
+                    utter.lang = prefs.language === 'ar' ? 'ar' : prefs.language === 'en' ? 'en-US' : 'fr-FR';
+                    speechSynthesis.cancel();
+                    speechSynthesis.speak(utter);
+                }
+            } catch {}
             fetchSessionData(); // Refresh data
         } catch (error) {
             console.error('Error saving attendance:', error);
@@ -85,6 +107,174 @@ const SessionDetail = () => {
             setSavingAttendance(false);
         }
     };
+
+    const markAllPresent = () => {
+        const updated = {};
+        students.forEach((s) => {
+            updated[s._id] = 'Présent';
+        });
+        setAttendanceMap(updated);
+        try {
+            if (prefs.voiceEnabled) {
+                const utter = new SpeechSynthesisUtterance(t('confirmPresenceAll'));
+                utter.lang = prefs.language === 'ar' ? 'ar' : prefs.language === 'en' ? 'en-US' : 'fr-FR';
+                speechSynthesis.cancel();
+                speechSynthesis.speak(utter);
+            }
+        } catch {}
+    };
+
+    // Guided mode helpers
+    const speakText = (text) => {
+        try {
+            if (!prefs.voiceEnabled) return;
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = prefs.language === 'ar' ? 'ar' : prefs.language === 'en' ? 'en-US' : 'fr-FR';
+            speechSynthesis.cancel();
+            speechSynthesis.speak(utter);
+        } catch {}
+    };
+
+    const startGuidedMode = () => {
+        setGuidedMode(true);
+        setCurrentIndex(0);
+        currentIndexRef.current = 0;
+        setPrefs((p) => ({ ...p, voiceEnabled: true }));
+        setCameraOn(true);
+        const s = students[0];
+        if (s) speakText(`${s.nom} ${s.prenom}`);
+    };
+
+    const toggleVoice = () => {
+        setPrefs((p) => ({ ...p, voiceEnabled: !p.voiceEnabled }));
+        // If enabling during guided mode, re-read current name
+        if (!prefs.voiceEnabled && guidedMode && students[currentIndex]) {
+            speakText(`${students[currentIndex].nom} ${students[currentIndex].prenom}`);
+        }
+    };
+
+    const advanceStudent = () => {
+        const next = currentIndexRef.current + 1;
+        if (next < students.length) {
+            // Wait ~3 seconds before advancing to next student
+            if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+            advanceTimerRef.current = setTimeout(() => {
+                setCurrentIndex(next);
+                currentIndexRef.current = next;
+                advancingRef.current = false;
+                const s = students[next];
+                if (s) speakText(`${s.nom} ${s.prenom}`);
+            }, 3000);
+        } else {
+            setGuidedMode(false);
+            showSuccess('Liste terminée');
+            advancingRef.current = false;
+        }
+    };
+
+    const markCurrent = (statusLabel) => {
+        const idx = currentIndexRef.current;
+        const s = students[idx];
+        if (!s) return;
+        if (advancingRef.current) return; // already waiting to advance
+        setAttendanceMap((prev) => ({ ...prev, [s._id]: statusLabel }));
+        advancingRef.current = true;
+        // Block further gesture triggers during the wait window
+        try {
+            gestureCooldownRef.current = performance.now() + 2900;
+        } catch {}
+        advanceStudent();
+    };
+
+    useEffect(() => {
+        currentIndexRef.current = currentIndex;
+    }, [currentIndex]);
+
+    // Camera + gesture detection using MediaPipe Hands via CDN
+    useEffect(() => {
+        if (!cameraOn) return;
+        let stream;
+        const onResults = (results) => {
+            const canvas = canvasRef.current;
+            const ctx = canvas?.getContext('2d');
+            if (!ctx || !videoRef.current) return;
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const lm = results.multiHandLandmarks?.[0];
+            if (lm) {
+                ctx.fillStyle = '#3B82F6';
+                lm.forEach((p) => ctx.fillRect(p.x * canvas.width, p.y * canvas.height, 4, 4));
+                // Helper: finger extended if tip above pip
+                const extended = [8, 12, 16, 20].reduce((acc, tipIdx) => {
+                    const pipIdx = tipIdx - 2;
+                    const tip = lm[tipIdx];
+                    const pip = lm[pipIdx];
+                    return acc + (tip.y < pip.y ? 1 : 0);
+                }, 0);
+
+                const now = performance.now();
+                if (now < gestureCooldownRef.current) return;
+
+                if (guidedMode) {
+                    // Mapping: open palm -> Absent, fist -> Present
+                    if (extended >= 3) {
+                        markCurrent('Absent');
+                        gestureCooldownRef.current = now + 1000;
+                    } else if (extended <= 1) {
+                        markCurrent('Présent');
+                        gestureCooldownRef.current = now + 1000;
+                    }
+                }
+            }
+        };
+        const load = async () => {
+            try {
+                if (!window.Hands) {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.body.appendChild(script);
+                    });
+                }
+                const hands = new window.Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+                hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.7, minTrackingConfidence: 0.6 });
+                hands.onResults(onResults);
+                handsRef.current = hands;
+
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    await videoRef.current.play();
+                }
+                showSuccess('Caméra activée');
+                const process = async () => {
+                    if (!videoRef.current || !handsRef.current) return;
+                    await handsRef.current.send({ image: videoRef.current });
+                    rafRef.current = requestAnimationFrame(process);
+                };
+                process();
+            } catch (e) {
+                console.error('Camera/Hands error', e);
+                const msg = e?.name === 'NotAllowedError'
+                    ? 'Autorisez la caméra dans le navigateur (blocage permissions).'
+                    : e?.name === 'NotFoundError'
+                    ? 'Aucune caméra détectée sur l’appareil.'
+                    : 'La caméra ou le modèle de main est indisponible.';
+                showError(msg);
+                setCameraOn(false);
+            }
+        };
+        load();
+        return () => {
+            cancelAnimationFrame(rafRef.current);
+            try { handsRef.current?.close(); } catch {}
+            try { stream && stream.getTracks().forEach((t) => t.stop()); } catch {}
+            try { advanceTimerRef.current && clearTimeout(advanceTimerRef.current); } catch {}
+        };
+    }, [cameraOn, guidedMode]);
 
     const handleFinishSession = async () => {
         const confirmed = await showConfirm('Êtes-vous sûr de vouloir terminer cette séance ? Cette action est irréversible.', 'Terminer la séance');
@@ -126,6 +316,9 @@ const SessionDetail = () => {
                 <div className="header-actions">
                     {!isFinished && canEditAttendance && (
                         <>
+                            <Button onClick={startGuidedMode} variant="secondary">
+                                🧑‍🏫 Mode signes
+                            </Button>
                             <Button onClick={handleSaveAttendance} loading={savingAttendance} variant="secondary">
                                 Enregistrer les présences
                             </Button>
@@ -153,6 +346,21 @@ const SessionDetail = () => {
 
                 <Card className="attendance-card">
                     <h3>Liste de présence ({students.length})</h3>
+
+                    {guidedMode && students[currentIndex] && (
+                        <div className="guided-banner">
+                            <div className="guided-name">
+                                {students[currentIndex].nom} {students[currentIndex].prenom}
+                            </div>
+                        </div>
+                    )}
+
+                    {guidedMode && (
+                        <div className="camera-box">
+                            <video ref={videoRef} className="camera-video" playsInline muted />
+                            <canvas ref={canvasRef} className="camera-canvas" />
+                        </div>
+                    )}
 
                     <div className="attendance-list">
                         {students.length === 0 ? (
