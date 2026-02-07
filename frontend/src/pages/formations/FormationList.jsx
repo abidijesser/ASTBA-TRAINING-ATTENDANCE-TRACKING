@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { formationAPI } from '../../api/formations';
 import { userAPI } from '../../api/users';
 import { Button, Card, Modal, Input } from '../../components/ui';
+import { uploadFile as uploadMediaFile, deleteFile as deleteMediaFile } from '../../services/uploadService';
 import './FormationList.css';
 
 const FormationList = () => {
@@ -19,9 +20,10 @@ const FormationList = () => {
         responsable_id: '',
         duree_estimee: '',
         date_debut: '',
-        niveau_requis: 'Débutant',
     });
     const [submitting, setSubmitting] = useState(false);
+    const [medias, setMedias] = useState([]);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         fetchFormations();
@@ -71,7 +73,10 @@ const FormationList = () => {
         e.preventDefault();
         try {
             setSubmitting(true);
-            await formationAPI.create(formData);
+            await formationAPI.create({
+                ...formData,
+                medias,
+            });
             setShowCreateModal(false);
             setFormData({
                 nom: '',
@@ -79,8 +84,8 @@ const FormationList = () => {
                 responsable_id: '',
                 duree_estimee: '',
                 date_debut: '',
-                niveau_requis: 'Débutant',
             });
+            setMedias([]);
             fetchFormations();
         } catch (error) {
             console.error('Error creating formation:', error);
@@ -99,6 +104,46 @@ const FormationList = () => {
                 console.error('Error deleting formation:', error);
             }
         }
+    };
+
+    const handleMediaSelect = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        try {
+            setUploading(true);
+            const uploads = [];
+            for (const file of files) {
+                const res = await uploadMediaFile(file);
+                const payload = res?.data || res; // support both wrappers
+                const cloud = payload?.data || payload; // our backend returns { data: { ... } }
+                const { url, publicId, format } = cloud;
+                const mime = file.type || '';
+                let type = 'raw';
+                if (mime.startsWith('image/')) type = 'image';
+                else if (mime.startsWith('video/')) type = 'video';
+                else if (mime === 'application/pdf') type = 'pdf';
+                uploads.push({ url, publicId, type, format });
+            }
+            setMedias(prev => [...prev, ...uploads]);
+            // Clear input value to allow re-selecting same files
+            e.target.value = '';
+        } catch (error) {
+            console.error('Error uploading media:', error);
+            alert("Échec du téléversement d'un ou plusieurs médias");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleRemoveMedia = async (index) => {
+        const item = medias[index];
+        try {
+            await deleteMediaFile(item.publicId);
+        } catch (error) {
+            // Even if deletion fails, allow removing from form
+            console.warn('Cloudinary deletion failed:', error);
+        }
+        setMedias(prev => prev.filter((_, i) => i !== index));
     };
 
     // Role check specifically for formateur vs manage roles
@@ -152,59 +197,88 @@ const FormationList = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {formations.map((formation) => (
-                                    <tr key={formation._id}>
-                                        <td className="bold">{formation.nom}</td>
-                                        <td className="text-muted">{formation.description?.substring(0, 60)}...</td>
-                                        <td>{new Date(formation.date_debut).toLocaleDateString()}</td>
-                                        <td>{formation.duree_mois} mois</td>
-                                        <td>
-                                            <span className="badge-info">{formation.niveau_requis}</span>
-                                        </td>
-                                        <td>
-                                            <Link to={`/formations/${formation._id}`}>
-                                                <Button variant="ghost" size="small">
-                                                    Consulter
-                                                </Button>
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {formations.map((formation) => {
+                                    const hasDate = !!formation.date_debut;
+                                    const dateText = hasDate
+                                        ? new Date(formation.date_debut).toLocaleDateString()
+                                        : '--';
+                                    const dureeMois = parseInt(formation.duree_estimee);
+                                    const dureeText = Number.isFinite(dureeMois)
+                                        ? `${dureeMois} mois`
+                                        : (formation.duree_estimee || '--');
+
+                                    const niveauLabel = Number.isFinite(formation.niveau_actuel)
+                                        ? (formation.niveau_actuel <= 4 ? `Niveau ${formation.niveau_actuel}` : 'Terminé')
+                                        : '--';
+
+                                    return (
+                                        <tr key={formation._id}>
+                                            <td className="bold">{formation.nom}</td>
+                                            <td className="text-muted">{formation.description?.substring(0, 60)}...</td>
+                                            <td>{dateText}</td>
+                                            <td>{dureeText}</td>
+                                            <td>
+                                                <span className="badge-info">{niveauLabel}</span>
+                                            </td>
+                                            <td>
+                                                <Link to={`/formations/${formation._id}`}>
+                                                    <Button variant="ghost" size="small">
+                                                        Consulter
+                                                    </Button>
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
                 </Card>
             ) : (
                 <div className="formations-grid">
-                    {formations.map((formation) => (
-                        <Card key={formation._id} className="formation-card">
-                            <div className="formation-header">
-                                <h3>{formation.nom}</h3>
-                            </div>
-                            <p className="formation-desc">{formation.description}</p>
-                            <div className="formation-meta">
-                                <span>📅 {new Date(formation.date_debut).toLocaleDateString()}</span>
-                                <span>⏱️ {formation.duree_mois} mois</span>
-                                <span>📚 {formation.niveau_requis}</span>
-                            </div>
-                            <div className="formation-actions">
-                                <Link to={`/formations/${formation._id}`}>
-                                    <Button variant="secondary" size="small" fullWidth>
-                                        Voir détails
-                                    </Button>
-                                </Link>
-                                {isResponsable && (
-                                    <Button
-                                        variant="danger"
-                                        size="small"
-                                        onClick={() => handleDelete(formation._id)}
-                                    >
-                                        Supprimer
-                                    </Button>
-                                )}
-                            </div>
-                        </Card>
-                    ))}
+                    {formations.map((formation) => {
+                        const hasDate = !!formation.date_debut;
+                        const dateText = hasDate
+                            ? new Date(formation.date_debut).toLocaleDateString()
+                            : '--';
+                        const dureeMois = parseInt(formation.duree_estimee);
+                        const dureeText = Number.isFinite(dureeMois)
+                            ? `${dureeMois} mois`
+                            : (formation.duree_estimee || '--');
+                        const niveauLabel = Number.isFinite(formation.niveau_actuel)
+                            ? (formation.niveau_actuel <= 4 ? `Niveau ${formation.niveau_actuel}` : 'Terminé')
+                            : '--';
+
+                        return (
+                            <Card key={formation._id} className="formation-card">
+                                <div className="formation-header">
+                                    <h3>{formation.nom}</h3>
+                                </div>
+                                <p className="formation-desc">{formation.description}</p>
+                                <div className="formation-meta">
+                                    <span>📅 {dateText}</span>
+                                    <span>⏱️ {dureeText}</span>
+                                    <span>📚 {niveauLabel}</span>
+                                </div>
+                                <div className="formation-actions">
+                                    <Link to={`/formations/${formation._id}`}>
+                                        <Button variant="secondary" size="small" fullWidth>
+                                            Voir détails
+                                        </Button>
+                                    </Link>
+                                    {isResponsable && (
+                                        <Button
+                                            variant="danger"
+                                            size="small"
+                                            onClick={() => handleDelete(formation._id)}
+                                        >
+                                            Supprimer
+                                        </Button>
+                                    )}
+                                </div>
+                            </Card>
+                        );
+                    })}
                 </div>
             )}
 
@@ -266,18 +340,34 @@ const FormationList = () => {
                     </div>
 
                     <div className="input-group">
-                        <label className="input-label">Niveau requis</label>
-                        <select
-                            name="niveau_requis"
-                            value={formData.niveau_requis}
-                            onChange={handleChange}
+                        <label className="input-label">Médias (images, vidéos, PDF)</label>
+                        <input
+                            type="file"
+                            multiple
+                            accept="image/*,video/*,application/pdf"
+                            onChange={handleMediaSelect}
                             className="input"
-                        >
-                            <option value="Débutant">Débutant</option>
-                            <option value="Intermédiaire">Intermédiaire</option>
-                            <option value="Avancé">Avancé</option>
-                        </select>
+                        />
+                        {medias.length > 0 && (
+                            <div className="media-preview-list" style={{ marginTop: '10px' }}>
+                                {medias.map((m, idx) => (
+                                    <div key={idx} className="media-preview-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                        {m.type === 'image' ? (
+                                            <img src={m.url} alt="media" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
+                                        ) : (
+                                            <a href={m.url} target="_blank" rel="noreferrer" style={{ fontSize: '12px' }}>
+                                                {m.type.toUpperCase()} · {m.format || ''}
+                                            </a>
+                                        )}
+                                        <Button size="small" variant="danger" onClick={() => handleRemoveMedia(idx)}>Retirer</Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {uploading && <p className="text-muted">Téléversement en cours...</p>}
                     </div>
+
+                    {/* Champ "Niveau requis" supprimé (non nécessaire) */}
                     <div className="modal-actions">
                         <Button type="submit" loading={submitting} fullWidth>
                             Créer

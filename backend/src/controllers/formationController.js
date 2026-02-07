@@ -84,7 +84,7 @@ export const getFormationById = async (req, res, next) => {
  */
 export const createFormation = async (req, res, next) => {
     try {
-        const { nom, description, responsable_id, nombre_niveaux, duree_estimee } = req.body;
+        const { nom, description, responsable_id, nombre_niveaux, duree_estimee, date_debut, medias } = req.body;
 
         // Check if formation with same name exists
         const existingFormation = await Formation.findOne({ nom });
@@ -101,6 +101,9 @@ export const createFormation = async (req, res, next) => {
             responsable_id: responsable_id || req.user._id,
             nombre_niveaux: 4, // Enforced
             duree_estimee,
+            // Persist provided start date if any
+            date_debut: date_debut ? new Date(date_debut) : undefined,
+            medias: Array.isArray(medias) ? medias : [],
         });
 
         // Automatically create 4 levels
@@ -152,7 +155,7 @@ export const createFormation = async (req, res, next) => {
  */
 export const updateFormation = async (req, res, next) => {
     try {
-        const { nom, description, duree_estimee, actif } = req.body;
+        const { nom, description, duree_estimee, actif, date_debut, medias } = req.body;
 
         const formation = await Formation.findById(req.params.id);
 
@@ -177,7 +180,9 @@ export const updateFormation = async (req, res, next) => {
         if (nom) formation.nom = nom;
         if (description) formation.description = description;
         if (duree_estimee) formation.duree_estimee = duree_estimee;
+        if (date_debut) formation.date_debut = new Date(date_debut);
         if (actif !== undefined) formation.actif = actif;
+        if (Array.isArray(medias)) formation.medias = medias;
 
         await formation.save();
 

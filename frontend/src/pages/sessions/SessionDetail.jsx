@@ -11,7 +11,8 @@ const SessionDetail = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [attendanceMap, setAttendanceMap] = useState({});
-    const [submitting, setSubmitting] = useState(false);
+    const [savingAttendance, setSavingAttendance] = useState(false);
+    const [finishingSession, setFinishingSession] = useState(false);
 
     useEffect(() => {
         fetchSessionData();
@@ -31,13 +32,8 @@ const SessionDetail = () => {
             // Initialize attendance map with status mapping
             const initialMap = {};
             attendanceRes.data.forEach(student => {
-                // Map backend enums to UI labels
-                let uiStatus = 'Absent';
-                if (student.statut === 'present') uiStatus = 'Présent';
-                else if (student.statut === 'absent') uiStatus = 'Absent';
-                else if (student.statut === 'retard') uiStatus = 'Retard';
-                else if (student.statut === 'justifie') uiStatus = 'Excusé';
-
+                // Only two states in UI: Présent / Absent
+                const uiStatus = student.statut === 'present' ? 'Présent' : 'Absent';
                 initialMap[student._id] = uiStatus;
             });
             setAttendanceMap(initialMap);
@@ -58,14 +54,12 @@ const SessionDetail = () => {
 
     const handleSaveAttendance = async () => {
         try {
-            setSubmitting(true);
+            setSavingAttendance(true);
 
             // Map UI labels back to backend enums
             const statusMap = {
                 'Présent': 'present',
-                'Absent': 'absent',
-                'Retard': 'retard',
-                'Excusé': 'justifie'
+                'Absent': 'absent'
             };
 
             const attendanceData = Object.entries(attendanceMap).map(([eleve_id, uiStatus]) => ({
@@ -81,7 +75,7 @@ const SessionDetail = () => {
             console.error('Error saving attendance:', error);
             alert("Erreur lors de l'enregistrement des présences");
         } finally {
-            setSubmitting(false);
+            setSavingAttendance(false);
         }
     };
 
@@ -89,7 +83,7 @@ const SessionDetail = () => {
         if (!window.confirm('Êtes-vous sûr de vouloir terminer cette séance ? Cette action est irréversible.')) return;
 
         try {
-            setSubmitting(true);
+            setFinishingSession(true);
             const res = await sessionAPI.finish(id);
             alert(res.message || 'Séance terminée avec succès !');
             fetchSessionData();
@@ -97,7 +91,7 @@ const SessionDetail = () => {
             console.error('Error finishing session:', error);
             alert(error.response?.data?.message || 'Erreur lors de la validation de la séance');
         } finally {
-            setSubmitting(false);
+            setFinishingSession(false);
         }
     };
 
@@ -123,10 +117,10 @@ const SessionDetail = () => {
                 <div className="header-actions">
                     {!isFinished && (
                         <>
-                            <Button onClick={handleSaveAttendance} loading={submitting} variant="secondary">
+                            <Button onClick={handleSaveAttendance} loading={savingAttendance} variant="secondary">
                                 Enregistrer les présences
                             </Button>
-                            <Button onClick={handleFinishSession} loading={submitting} variant="primary">
+                            <Button onClick={handleFinishSession} loading={finishingSession} variant="primary">
                                 Terminer la séance
                             </Button>
                         </>
@@ -185,20 +179,6 @@ const SessionDetail = () => {
                                                         disabled={isFinished}
                                                     >
                                                         A
-                                                    </button>
-                                                    <button
-                                                        className={`status-btn retard ${attendanceMap[student._id] === 'Retard' ? 'active' : ''}`}
-                                                        onClick={() => !isFinished && handleAttendanceChange(student._id, 'Retard')}
-                                                        disabled={isFinished}
-                                                    >
-                                                        R
-                                                    </button>
-                                                    <button
-                                                        className={`status-btn excuse ${attendanceMap[student._id] === 'Excusé' ? 'active' : ''}`}
-                                                        onClick={() => !isFinished && handleAttendanceChange(student._id, 'Excusé')}
-                                                        disabled={isFinished}
-                                                    >
-                                                        E
                                                     </button>
                                                 </div>
                                             </td>
