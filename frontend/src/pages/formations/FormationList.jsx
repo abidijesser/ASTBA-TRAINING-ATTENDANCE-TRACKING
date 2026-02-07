@@ -113,19 +113,21 @@ const FormationList = () => {
             setUploading(true);
             const uploads = [];
             for (const file of files) {
-                const res = await uploadMediaFile(file);
-                const payload = res?.data || res; // support both wrappers
-                const cloud = payload?.data || payload; // our backend returns { data: { ... } }
-                const { url, publicId, format } = cloud;
+                // Only allow images
                 const mime = file.type || '';
-                let type = 'raw';
-                if (mime.startsWith('image/')) type = 'image';
-                else if (mime.startsWith('video/')) type = 'video';
-                else if (mime === 'application/pdf') type = 'pdf';
-                uploads.push({ url, publicId, type, format });
+                if (!mime.startsWith('image/')) {
+                    continue;
+                }
+                const res = await uploadMediaFile(file);
+                const payload = res?.data || res;
+                const cloud = payload?.data || payload;
+                const { url, publicId, format } = cloud;
+                uploads.push({ url, publicId, type: 'image', format });
+            }
+            if (uploads.length === 0) {
+                alert('Seules les images sont autorisées.');
             }
             setMedias(prev => [...prev, ...uploads]);
-            // Clear input value to allow re-selecting same files
             e.target.value = '';
         } catch (error) {
             console.error('Error uploading media:', error);
@@ -340,11 +342,11 @@ const FormationList = () => {
                     </div>
 
                     <div className="input-group">
-                        <label className="input-label">Médias (images, vidéos, PDF)</label>
+                        <label className="input-label">Médias (images uniquement)</label>
                         <input
                             type="file"
                             multiple
-                            accept="image/*,video/*,application/pdf"
+                            accept="image/*"
                             onChange={handleMediaSelect}
                             className="input"
                         />

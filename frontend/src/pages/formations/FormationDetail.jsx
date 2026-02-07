@@ -8,6 +8,9 @@ import { userAPI } from '../../api/users';
 import { Button, Card, Modal, Input } from '../../components/ui';
 import './FormationDetail.css';
 
+// Backend API base URL for non-Axios links (e.g., file downloads)
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const FormationDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -241,7 +244,7 @@ const FormationDetail = () => {
                                 : '--'}
                         </div>
                         <div><strong>Niveau Actuel:</strong> {formation.niveau_actuel ? `Niveau ${formation.niveau_actuel}` : 'N/A'}</div>
-                        <div><strong>Niveau requis:</strong> {formation.niveau_requis || '--'}</div>
+                        {/* Champ "Niveau requis" retiré de l'affichage */}
                         <div>
                             <strong>Responsable:</strong> {formation.responsable_id?.nom} {formation.responsable_id?.prenom}
                             {isResponsable && (
@@ -257,38 +260,23 @@ const FormationDetail = () => {
                     <div className="card-header">
                         <h3>Médias</h3>
                     </div>
-                    {(!formation.medias || formation.medias.length === 0) ? (
-                        <p className="text-muted">Aucun média associé à cette formation.</p>
-                    ) : (
-                        <div className="media-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
-                            {formation.medias.map((m) => {
-                                const makeMediaUrl = (media) => {
-                                    let url = media.url || '';
-                                    if (media.type === 'pdf' && url.includes('/image/upload/')) {
-                                        url = url.replace('/image/upload/', '/raw/upload/');
-                                    }
-                                    return url;
-                                };
-
-                                return (
+                    {(() => {
+                        const imageMedias = (formation.medias || []).filter(m => m.type === 'image');
+                        if (imageMedias.length === 0) {
+                            return <p className="text-muted">Aucun média image associé à cette formation.</p>;
+                        }
+                        return (
+                            <div className="media-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+                                {imageMedias.map((m) => (
                                     <div key={m.publicId || m.url} className="media-item" style={{ border: '1px solid #eee', borderRadius: '8px', padding: '8px' }}>
-                                        {m.type === 'image' ? (
-                                            <a href={m.url} target="_blank" rel="noreferrer" title="Voir">
-                                                <img src={m.url} alt={m.title || 'image'} style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '6px' }} />
-                                            </a>
-                                        ) : m.type === 'video' ? (
-                                            <video src={m.url} controls style={{ width: '100%', height: '200px', borderRadius: '6px' }} />
-                                        ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                <span style={{ fontSize: '12px' }}>{(m.type || 'pdf').toUpperCase()}</span>
-                                                <a href={makeMediaUrl(m)} target="_blank" rel="noreferrer" className="btn btn-secondary btn-small">Ouvrir</a>
-                                            </div>
-                                        )}
+                                        <a href={m.url} target="_blank" rel="noreferrer" title="Voir">
+                                            <img src={m.url} alt={m.title || 'image'} style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '6px' }} />
+                                        </a>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        );
+                    })()}
                 </Card>
 
                 <Card className="levels-card">

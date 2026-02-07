@@ -12,13 +12,13 @@ import { Readable } from 'stream';
  * @param {string} folder - Cloudinary folder name (optional)
  * @returns {Promise<Object>} Upload result with url and public_id
  */
-export const uploadToCloudinary = (fileBuffer, folder = 'uploads') => {
+export const uploadToCloudinary = (fileBuffer, folder = 'uploads', resourceType = 'auto') => {
     return new Promise((resolve, reject) => {
         // Create upload stream
         const uploadStream = cloudinary.uploader.upload_stream(
             {
                 folder: folder,
-                resource_type: 'auto', // Automatically detect resource type
+                resource_type: resourceType,
             },
             (error, result) => {
                 if (error) {
@@ -30,6 +30,7 @@ export const uploadToCloudinary = (fileBuffer, folder = 'uploads') => {
                         format: result.format,
                         width: result.width,
                         height: result.height,
+                        resourceType: result.resource_type,
                     });
                 }
             }

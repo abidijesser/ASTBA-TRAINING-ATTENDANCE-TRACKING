@@ -2,6 +2,7 @@ import {
     uploadToCloudinary,
     deleteFromCloudinary,
 } from '../services/cloudinaryService.js';
+import cloudinary from '../config/cloudinary.js';
 
 /**
  * Upload Controllers
@@ -23,8 +24,15 @@ export const uploadFile = async (req, res, next) => {
             });
         }
 
+        // Determine resource type based on mimetype
+        const mime = req.file.mimetype || '';
+        let resourceType = 'auto';
+        if (mime.startsWith('image/')) resourceType = 'image';
+        else if (mime.startsWith('video/')) resourceType = 'video';
+        else if (mime === 'application/pdf') resourceType = 'raw';
+
         // Upload to Cloudinary
-        const result = await uploadToCloudinary(req.file.buffer);
+        const result = await uploadToCloudinary(req.file.buffer, 'uploads', resourceType);
 
         res.status(200).json({
             success: true,
@@ -33,6 +41,7 @@ export const uploadFile = async (req, res, next) => {
                 url: result.url,
                 publicId: result.publicId,
                 format: result.format,
+                resourceType: result.resourceType,
                 dimensions: {
                     width: result.width,
                     height: result.height,
@@ -79,6 +88,51 @@ export const deleteFile = async (req, res, next) => {
             success: true,
             message: 'File deleted successfully',
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @route   GET /api/upload/private-download/:publicId
+ * @desc    Generate a signed private download URL (useful for RAW/PDF when public delivery is restricted)
+ * @access  Private
+ */
+export const privateDownload = async (req, res, next) => {
+    try {
+        const { publicId } = req.params;
+        const decodedPublicId = decodeURIComponent(publicId);
+
+        // Generate a signed download URL for raw resource type (PDF)
+        const url = cloudinary.utils.private_download_url(decodedPublicId, 'pdf', {
+            resource_type: 'raw',
+        });
+
+        // Redirect to the signed URL
+        return res.redirect(url);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @route   GET /api/upload/view/:publicId
+ * @desc    Generate a signed inline view URL for RAW/PDF assets
+ * @access  Private
+ */
+export const viewAsset = async (req, res, next) => {
+    try {
+        const { publicId } = req.params;
+        const decodedPublicId = decodeURIComponent(publicId);
+
+        // Authenticated signed URL for inline viewing
+        const signedUrl = cloudinary.url(decodedPublicId, {
+            resource_type: 'raw',
+            type: 'authenticated',
+            sign_url: true,
+        });
+
+        return res.redirect(signedUrl);
     } catch (error) {
         next(error);
     }

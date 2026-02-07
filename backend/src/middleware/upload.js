@@ -8,15 +8,13 @@ import multer from 'multer';
 // Configure multer to use memory storage
 const storage = multer.memoryStorage();
 
-// File filter for images, videos and PDFs
+// File filter: images only (no videos or PDFs)
 const fileFilter = (req, file, cb) => {
     const isImage = file.mimetype.startsWith('image/');
-    const isVideo = file.mimetype.startsWith('video/');
-    const isPdf = file.mimetype === 'application/pdf';
-    if (isImage || isVideo || isPdf) {
+    if (isImage) {
         cb(null, true);
     } else {
-        cb(new Error('Type de fichier non valide. Autorisés: images, vidéos, PDF.'), false);
+        cb(new Error('Type de fichier non valide. Autorisés: images uniquement.'), false);
     }
 };
 
@@ -25,7 +23,7 @@ export const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        // Increase limit to allow videos; backend streams to Cloudinary
-        fileSize: 50 * 1024 * 1024, // 50MB
+        // Reasonable limit for images
+        fileSize: 20 * 1024 * 1024, // 20MB
     },
 });

@@ -1,5 +1,5 @@
 import express from 'express';
-import { uploadFile, deleteFile } from '../controllers/uploadController.js';
+import { uploadFile, deleteFile, privateDownload, viewAsset } from '../controllers/uploadController.js';
 import { protect } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 
@@ -10,10 +10,16 @@ const router = express.Router();
  * All routes are protected - require authentication
  */
 
-// Upload file
+// Upload file (requires auth)
 router.post('/', protect, upload.single('file'), uploadFile);
 
-// Delete file
+// Delete file (requires auth)
 router.delete('/:publicId', protect, deleteFile);
+
+// Private download redirect (signed URL) - public, Cloudinary signature secures access
+router.get('/private-download/:publicId', privateDownload);
+
+// Inline view redirect for RAW/PDF via authenticated signed URL - public
+router.get('/view/:publicId', viewAsset);
 
 export default router;
