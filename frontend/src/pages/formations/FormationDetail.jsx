@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useDialog } from '../../context/DialogContext';
 import { formationAPI } from '../../api/formations';
 import { certificationAPI } from '../../api/certifications';
 import { studentAPI } from '../../api/students';
@@ -15,6 +16,7 @@ const FormationDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { isResponsable } = useAuth();
+    const { showAlert, showConfirm, showError, showSuccess } = useDialog();
 
     const [formation, setFormation] = useState(null);
     const [enrolledStudents, setEnrolledStudents] = useState([]);
@@ -82,10 +84,10 @@ const FormationDetail = () => {
             // Also need to fetch students list again if we displayed it
             setShowAssignModal(false);
             setSelectedStudent('');
-            alert('Élève assigné avec succès');
+            showSuccess('Élève assigné avec succès');
         } catch (error) {
             console.error('Error assigning student:', error);
-            alert('Erreur lors de l\'assignation (ex: déjà inscrit)');
+            showError('Erreur lors de l\'assignation (ex: déjà inscrit)');
         } finally {
             setAssigning(false);
         }
@@ -100,10 +102,10 @@ const FormationDetail = () => {
             fetchFormation();
             setShowFormateurModal(false);
             setSelectedFormateur('');
-            alert('Formateur assigné avec succès');
+            showSuccess('Formateur assigné avec succès');
         } catch (error) {
             console.error('Error assigning formateur:', error);
-            alert('Erreur lors de l\'assignation du formateur');
+            showError('Erreur lors de l\'assignation du formateur');
         } finally {
             setAssigningFormateur(false);
         }
@@ -128,10 +130,10 @@ const FormationDetail = () => {
             await formationAPI.update(id, editData);
             fetchFormation();
             setShowEditModal(false);
-            alert('Formation mise à jour avec succès');
+            showSuccess('Formation mise à jour avec succès');
         } catch (error) {
             console.error('Error updating formation:', error);
-            alert('Erreur lors de la mise à jour');
+            showError('Erreur lors de la mise à jour');
         } finally {
             setUpdating(false);
         }
@@ -146,19 +148,20 @@ const FormationDetail = () => {
     };
 
     const handleGenerateCertificates = async () => {
-        if (!window.confirm('Voulez-vous générer les certificats pour tous les élèves éligibles de cette formation ?')) {
+        const confirmed = await showConfirm('Voulez-vous générer les certificats pour tous les élèves éligibles de cette formation ?', 'Générer les certificats');
+        if (!confirmed) {
             return;
         }
 
         try {
             setGeneratingCertificates(true);
             const response = await certificationAPI.generateBulk(id);
-            alert(response.message);
+            showSuccess(response.message);
             // Refresh detail to potentially show updated student statuses
             fetchEnrolledStudents();
         } catch (error) {
             console.error('Error generating certificates:', error);
-            alert('Erreur lors de la génération des certificats');
+            showError('Erreur lors de la génération des certificats');
         } finally {
             setGeneratingCertificates(false);
         }

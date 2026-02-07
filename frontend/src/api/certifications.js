@@ -1,8 +1,8 @@
 import api from './axios';
 
 export const certificationAPI = {
-    getAll: async () => {
-        const response = await api.get('/certifications');
+    getAll: async (params = {}) => {
+        const response = await api.get('/certifications', { params });
         return response.data;
     },
     getById: async (id) => {
@@ -21,8 +21,15 @@ export const certificationAPI = {
         const response = await api.post(`/certifications/generate-bulk/${formationId}`);
         return response.data;
     },
-    download: async (id) => {
-        const response = await api.get(`/certifications/${id}/download`);
+    seedPending: async (formationId) => {
+        const url = formationId
+            ? `/certifications/seed-pending/${formationId}`
+            : '/certifications/seed-pending';
+        const response = await api.post(url);
         return response.data;
+    },
+    download: async (id) => {
+        const response = await api.get(`/certifications/${id}/download`, { responseType: 'blob' });
+        return response; // return full axios response to access blob
     }
 };

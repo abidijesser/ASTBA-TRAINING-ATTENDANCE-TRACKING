@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import { logLoginActivity, logLogoutActivity } from '../middleware/activityLogger.js';
 
 /**
  * Authentication Controllers
@@ -116,6 +117,13 @@ export const login = async (req, res, next) => {
                 },
             },
         });
+
+        // Log login activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logLoginActivity(user._id, ipAddress, userAgent).catch((err) =>
+            console.error('Failed to log login activity:', err)
+        );
     } catch (error) {
         next(error);
     }
@@ -128,6 +136,16 @@ export const login = async (req, res, next) => {
  */
 export const logout = async (req, res, next) => {
     try {
+        // Log logout activity (non-blocking, happens before cookie clearing)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        
+        if (req.user?._id) {
+            logLogoutActivity(req.user._id, ipAddress, userAgent).catch((err) =>
+                console.error('Failed to log logout activity:', err)
+            );
+        }
+
         // Clear the token cookie
         res.cookie('token', '', {
             httpOnly: true,

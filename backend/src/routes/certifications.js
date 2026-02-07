@@ -6,6 +6,7 @@ import {
     getStudentCertifications,
     downloadCertificate,
     generateFormationCertificates,
+    seedPendingCertificates,
 } from '../controllers/certificationController.js';
 import { protect, isResponsable, isFormateur } from '../middleware/auth.js';
 
@@ -26,6 +27,10 @@ router.post('/validate', protect, isResponsable, validateCertification);
 
 // Generate bulk certificates for a formation
 router.post('/generate-bulk/:formationId', protect, isResponsable, generateFormationCertificates);
+
+// Seed pending certificates for all enrollments or a specific formation
+router.post('/seed-pending', protect, isResponsable, seedPendingCertificates);
+router.post('/seed-pending/:formationId', protect, isResponsable, seedPendingCertificates);
 
 // Get student certificates
 router.get('/student/:eleveId', protect, isFormateur, getStudentCertifications);

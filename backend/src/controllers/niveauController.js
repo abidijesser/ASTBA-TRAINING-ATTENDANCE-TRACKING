@@ -1,5 +1,6 @@
 import Niveau from '../models/Niveau.js';
 import Seance from '../models/Seance.js';
+import { logActivity } from './activityController.js';
 
 /**
  * Niveau Controller
@@ -85,6 +86,21 @@ export const createNiveau = async (req, res, next) => {
             message: 'Niveau créé avec succès',
             data: { niveau },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'create',
+            `Création d'un nouveau niveau: ${niveau.nom}`,
+            'Niveau',
+            niveau._id,
+            niveau.nom,
+            { numero: niveau.numero },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -120,6 +136,21 @@ export const updateNiveau = async (req, res, next) => {
             message: 'Niveau mis à jour avec succès',
             data: { niveau },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'update',
+            `Modification du niveau: ${niveau.nom}`,
+            'Niveau',
+            niveau._id,
+            niveau.nom,
+            { nom, description },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -141,12 +172,29 @@ export const deleteNiveau = async (req, res, next) => {
             });
         }
 
+        const niveauName = niveau.nom;
+
         await Niveau.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
             success: true,
             message: 'Niveau supprimé avec succès',
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'delete',
+            `Suppression du niveau: ${niveauName}`,
+            'Niveau',
+            req.params.id,
+            niveauName,
+            null,
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }

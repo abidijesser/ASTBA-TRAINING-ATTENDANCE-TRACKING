@@ -3,6 +3,7 @@ import Formation from '../models/Formation.js';
 import EleveFormation from '../models/EleveFormation.js';
 import Presence from '../models/Presence.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../services/cloudinaryService.js';
+import { logActivity } from './activityController.js';
 
 /**
  * Student Controller
@@ -150,6 +151,21 @@ export const createEleve = async (req, res, next) => {
             message: 'Élève créé avec succès',
             data: { eleve },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'create',
+            `Création d'un nouvel élève: ${nom} ${prenom}`,
+            'Eleve',
+            eleve._id,
+            `${nom} ${prenom}`,
+            { email, telephone },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -200,6 +216,21 @@ export const updateEleve = async (req, res, next) => {
             message: 'Élève mis à jour avec succès',
             data: { eleve },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'update',
+            `Modification de l'élève: ${eleve.nom} ${eleve.prenom}`,
+            'Eleve',
+            eleve._id,
+            `${eleve.nom} ${eleve.prenom}`,
+            { nom, prenom, email, telephone },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -221,6 +252,8 @@ export const deleteEleve = async (req, res, next) => {
             });
         }
 
+        const eleveName = `${eleve.nom} ${eleve.prenom}`;
+
         // Delete photo from Cloudinary if exists
         if (eleve.photo) {
             const publicId = eleve.photo.split('/').pop().split('.')[0];
@@ -233,6 +266,21 @@ export const deleteEleve = async (req, res, next) => {
             success: true,
             message: 'Élève supprimé avec succès',
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'delete',
+            `Suppression de l'élève: ${eleveName}`,
+            'Eleve',
+            req.params.id,
+            eleveName,
+            null,
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }

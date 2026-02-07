@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useDialog } from '../../context/DialogContext';
 import { studentAPI } from '../../api/students';
 import { formationAPI } from '../../api/formations';
 import { attendanceAPI } from '../../api/attendance';
@@ -15,6 +16,7 @@ const StudentDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { isResponsable } = useAuth();
+    const { showAlert, showError, showSuccess } = useDialog();
     const [student, setStudent] = useState(null);
     const [studentFormations, setStudentFormations] = useState([]);
     const [allFormations, setAllFormations] = useState([]);
@@ -120,17 +122,17 @@ const StudentDetail = () => {
                     await formationAPI.assignStudent(selectedFormation, id);
                 } catch (assignError) {
                     console.error('Error assigning formation:', assignError);
-                    alert('L\'élève a été mis à jour, mais l\'assignation à la formation a échoué (déjà inscrit ?)');
+                    showAlert('L\'élève a été mis à jour, mais l\'assignation à la formation a échoué (déjà inscrit ?)');
                 }
             }
 
             fetchStudent();
             fetchStudentFormations();
             setShowEditModal(false);
-            alert('Données mises à jour avec succès');
+            showSuccess('Données mises à jour avec succès');
         } catch (error) {
             console.error('Error updating student:', error);
-            alert('Erreur lors de la mise à jour');
+            showError('Erreur lors de la mise à jour');
         } finally {
             setUpdating(false);
         }

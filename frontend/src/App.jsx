@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { DialogProvider } from './context/DialogContext';
+import DialogContainer from './components/DialogContainer';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
@@ -13,15 +15,18 @@ import FormationDetail from './pages/formations/FormationDetail';
 import SessionList from './pages/sessions/SessionList';
 import SessionDetail from './pages/sessions/SessionDetail';
 import CertificationList from './pages/certifications/CertificationList';
+import History from './pages/History';
 
 // Layout
 import Layout from './components/Layout';
 
 function App() {
     return (
-        <AuthProvider>
-            <BrowserRouter>
-                <Routes>
+        <DialogProvider>
+            <AuthProvider>
+                <DialogContainer />
+                <BrowserRouter>
+                    <Routes>
                     {/* Public Routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
@@ -46,13 +51,15 @@ function App() {
                         <Route path="sessions" element={<SessionList />} />
                         <Route path="sessions/:id" element={<SessionDetail />} />
                         <Route path="certifications" element={<CertificationList />} />
+                        <Route path="history" element={<History />} />
                     </Route>
 
                     {/* Catch all */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-            </BrowserRouter>
-        </AuthProvider>
+                </BrowserRouter>
+            </AuthProvider>
+        </DialogProvider>
     );
 }
 

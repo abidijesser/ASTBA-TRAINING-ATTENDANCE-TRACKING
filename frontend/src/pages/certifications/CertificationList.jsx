@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { certificationAPI } from '../../api/certifications';
+import { useDialog } from '../../context/DialogContext';
 import { Button, Card } from '../../components/ui';
 import './CertificationList.css';
 
 const CertificationList = () => {
+    const { showAlert, showError } = useDialog();
     const [certifications, setCertifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
+    const [expanded, setExpanded] = useState({}); // { [formationId]: boolean }
 
     useEffect(() => {
         fetchCertifications();
@@ -33,17 +36,78 @@ const CertificationList = () => {
         fetchCertifications();
     };
 
-    const handleDownload = async (id) => {
+    const handleDownload = async (cert) => {
         try {
-            const response = await certificationAPI.download(id);
-            alert(response.message); // For now, just show the message
-            if (response.data?.download_url) {
-                window.open(response.data.download_url, '_blank');
-            }
+            const response = await certificationAPI.download(cert._id);
+            const blob = response.data;
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `certificat-${cert.numero_certificat || cert._id}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            showAlert('Certificat téléchargé');
         } catch (error) {
             console.error('Error downloading certificate:', error);
-            alert('Erreur lors du téléchargement');
+            let msg = 'Erreur lors du téléchargement';
+            try {
+                if (error?.response?.data) {
+                    const data = error.response.data;
+                    if (data instanceof Blob) {
+                        const text = await data.text();
+                        try {
+                            const json = JSON.parse(text);
+                            msg = json.message || text || msg;
+                        } catch {
+                            msg = text || msg;
+                        }
+                    } else if (typeof data === 'string') {
+                        msg = data;
+                    } else if (data.message) {
+                        msg = data.message;
+                    }
+                } else if (error?.message) {
+                    msg = error.message;
+                }
+            } catch {}
+            showError(msg);
         }
+    };
+
+    const handleValidate = async (cert) => {
+        try {
+            const payload = {
+                eleve_id: cert.eleve_id?._id || cert.eleve_id,
+                formation_id: cert.formation_id?._id || cert.formation_id,
+                remarques: 'Validation manuelle',
+            };
+            const resp = await certificationAPI.validate(payload);
+            showAlert(resp.message || 'Certificat validé');
+            fetchCertifications();
+        } catch (error) {
+            console.error('Error validating certificate:', error);
+            showError("Échec de la validation du certificat");
+        }
+    };
+
+    // Group certifications by formation at top-level to respect hooks rules
+    const groupedByFormation = useMemo(() => {
+        const map = new Map();
+        for (const cert of certifications) {
+            const fid = cert.formation_id?._id || 'sans-formation';
+            const fname = cert.formation_id?.nom || 'Sans formation';
+            if (!map.has(fid)) {
+                map.set(fid, { id: fid, name: fname, items: [] });
+            }
+            map.get(fid).items.push(cert);
+        }
+        return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }, [certifications]);
+
+    const toggleExpand = (formationId) => {
+        setExpanded((prev) => ({ ...prev, [formationId]: !prev[formationId] }));
     };
 
     return (
@@ -83,33 +147,58 @@ const CertificationList = () => {
             {loading ? (
                 <div className="loading-state">Chargement...</div>
             ) : certifications.length > 0 ? (
-                <div className="certification-grid">
-                    {certifications.map((cert) => (
-                        <Card key={cert._id} className="certification-card">
-                            <div className="cert-header">
-                                <div className="cert-number">{cert.numero_certificat || 'N° en attente'}</div>
-                                <span className={`status-badge ${cert.statut}`}>
-                                    {cert.statut === 'valide' ? 'Validé' : 'En attente'}
-                                </span>
+                <div>
+                    {groupedByFormation.map((group) => (
+                        <Card key={group.id} style={{ marginBottom: '16px' }}>
+                            <div
+                                onClick={() => toggleExpand(group.id)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    cursor: 'pointer',
+                                    padding: '8px 4px'
+                                }}
+                            >
+                                <h2 style={{ margin: 0, fontSize: '18px' }}>
+                                    {group.name}
+                                    <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>
+                                        ({group.items.length})
+                                    </span>
+                                </h2>
+                                <span style={{ fontSize: '18px' }}>{expanded[group.id] ? '▾' : '▸'}</span>
                             </div>
-                            <div className="cert-body">
-                                <h3>{cert.eleve_id?.nom} {cert.eleve_id?.prenom}</h3>
-                                <p className="formation-name">Formation: {cert.formation_id?.nom}</p>
-                                <div className="cert-meta">
-                                    <span>📅 {new Date(cert.date_obtention).toLocaleDateString()}</span>
-                                    <span>📊 {cert.pourcentage_presence_total}% présence</span>
+
+                            {expanded[group.id] && (
+                                <div className="certification-grid" style={{ marginTop: '8px' }}>
+                                    {group.items.map((cert) => (
+                                        <Card key={cert._id} className="certification-card">
+                                            <div className="cert-header">
+                                                {cert.numero_certificat && (
+                                                    <div className="cert-number">{cert.numero_certificat}</div>
+                                                )}
+                                            </div>
+                                            <div className="cert-body">
+                                                <h3>{cert.eleve_id?.nom} {cert.eleve_id?.prenom}</h3>
+                                                <div className="cert-meta">
+                                                    <span>📅 {new Date(cert.date_obtention).toLocaleDateString()}</span>
+                                                    <span>📊 {cert.pourcentage_presence_total}% présence</span>
+                                                </div>
+                                            </div>
+                                            <div className="cert-footer" style={{ display: 'flex', gap: 8 }}>
+                                                <Button
+                                                    size="small"
+                                                    variant="secondary"
+                                                    fullWidth
+                                                    onClick={() => handleDownload(cert)}
+                                                >
+                                                    📄 Télécharger
+                                                </Button>
+                                            </div>
+                                        </Card>
+                                    ))}
                                 </div>
-                            </div>
-                            <div className="cert-footer">
-                                <Button
-                                    size="small"
-                                    variant="secondary"
-                                    fullWidth
-                                    onClick={() => handleDownload(cert._id)}
-                                >
-                                    📄 Télécharger
-                                </Button>
-                            </div>
+                            )}
                         </Card>
                     ))}
                 </div>

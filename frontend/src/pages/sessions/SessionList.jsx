@@ -4,10 +4,12 @@ import { sessionAPI, niveauAPI } from '../../api/sessions';
 import { formationAPI } from '../../api/formations';
 import { Button, Card, Modal, Input } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
+import { useDialog } from '../../context/DialogContext';
 import './SessionList.css';
 
 const SessionList = () => {
     const { isResponsable } = useAuth();
+    const { showAlert, showError } = useDialog();
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -106,7 +108,7 @@ const SessionList = () => {
         e.preventDefault();
         try {
             if (!formData.niveau_id) {
-                alert("Erreur: Niveau non identifié");
+                showAlert("Erreur: Niveau non identifié");
                 return;
             }
 
@@ -122,7 +124,7 @@ const SessionList = () => {
             fetchSessions();
         } catch (error) {
             console.error("Error creating session:", error);
-            alert("Erreur lors de la création");
+            showError("Erreur lors de la création");
         }
     };
 

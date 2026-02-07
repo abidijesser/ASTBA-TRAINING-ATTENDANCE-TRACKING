@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { sessionAPI } from '../../api/sessions';
 import { useAuth } from '../../context/AuthContext';
+import { useDialog } from '../../context/DialogContext';
 import { Button, Card } from '../../components/ui';
 import './SessionDetail.css';
 
 const SessionDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { showAlert, showConfirm, showError, showSuccess } = useDialog();
     const [session, setSession] = useState(null);
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -74,27 +76,28 @@ const SessionDetail = () => {
 
             // The sessionAPI.markAttendance helper already wraps the argument in { attendances: ... }
             await sessionAPI.markAttendance(id, attendanceData);
-            alert('Présences enregistrées avec succès !');
+            showSuccess('Présences enregistrées avec succès !');
             fetchSessionData(); // Refresh data
         } catch (error) {
             console.error('Error saving attendance:', error);
-            alert("Erreur lors de l'enregistrement des présences");
+            showError("Erreur lors de l'enregistrement des présences");
         } finally {
             setSavingAttendance(false);
         }
     };
 
     const handleFinishSession = async () => {
-        if (!window.confirm('Êtes-vous sûr de vouloir terminer cette séance ? Cette action est irréversible.')) return;
+        const confirmed = await showConfirm('Êtes-vous sûr de vouloir terminer cette séance ? Cette action est irréversible.', 'Terminer la séance');
+        if (!confirmed) return;
 
         try {
             setFinishingSession(true);
             const res = await sessionAPI.finish(id);
-            alert(res.message || 'Séance terminée avec succès !');
+            showSuccess(res.message || 'Séance terminée avec succès !');
             fetchSessionData();
         } catch (error) {
             console.error('Error finishing session:', error);
-            alert(error.response?.data?.message || 'Erreur lors de la validation de la séance');
+            showError(error.response?.data?.message || 'Erreur lors de la validation de la séance');
         } finally {
             setFinishingSession(false);
         }

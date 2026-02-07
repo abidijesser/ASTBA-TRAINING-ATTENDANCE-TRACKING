@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useDialog } from '../../context/DialogContext';
 import { formationAPI } from '../../api/formations';
 import { userAPI } from '../../api/users';
 import { Button, Card, Modal, Input } from '../../components/ui';
@@ -9,6 +10,7 @@ import './FormationList.css';
 
 const FormationList = () => {
     const { user, isResponsable } = useAuth();
+    const { showAlert, showConfirm, showError, showSuccess } = useDialog();
     const [formations, setFormations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -89,14 +91,15 @@ const FormationList = () => {
             fetchFormations();
         } catch (error) {
             console.error('Error creating formation:', error);
-            alert("Erreur lors de la création (Vérifier que le nom est unique)");
+            showError("Erreur lors de la création (Vérifier que le nom est unique)");
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette formation ?')) {
+        const confirmed = await showConfirm('Êtes-vous sûr de vouloir supprimer cette formation ?', 'Supprimer la formation');
+        if (confirmed) {
             try {
                 await formationAPI.delete(id);
                 fetchFormations();
@@ -125,13 +128,13 @@ const FormationList = () => {
                 uploads.push({ url, publicId, type: 'image', format });
             }
             if (uploads.length === 0) {
-                alert('Seules les images sont autorisées.');
+                showAlert('Seules les images sont autorisées.');
             }
             setMedias(prev => [...prev, ...uploads]);
             e.target.value = '';
         } catch (error) {
             console.error('Error uploading media:', error);
-            alert("Échec du téléversement d'un ou plusieurs médias");
+            showError("Échec du téléversement d'un ou plusieurs médias");
         } finally {
             setUploading(false);
         }
