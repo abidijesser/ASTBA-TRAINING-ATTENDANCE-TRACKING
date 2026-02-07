@@ -83,7 +83,7 @@ const Login = () => {
                         <div className="logo-icon">AS</div>
                     </div>
                     <h1 className="login-title">ASTBA</h1>
-                    <p className="login-subtitle">Système de Gestion de Formation</p>
+                    <p className="login-subtitle">Système de Gestion de Formationssssss</p>
                 </div>
 
                 <Card>
