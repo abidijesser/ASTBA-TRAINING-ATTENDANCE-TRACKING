@@ -11,3 +11,4 @@ export { default as Seance } from './Seance.js';
 export { default as Presence } from './Presence.js';
 export { default as EleveFormation } from './EleveFormation.js';
 export { default as Certification } from './Certification.js';
+export { default as Activity } from './Activity.js';

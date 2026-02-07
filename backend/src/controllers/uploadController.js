@@ -3,6 +3,7 @@ import {
     deleteFromCloudinary,
 } from '../services/cloudinaryService.js';
 import cloudinary from '../config/cloudinary.js';
+import { logActivity } from './activityController.js';
 
 /**
  * Upload Controllers
@@ -48,6 +49,21 @@ export const uploadFile = async (req, res, next) => {
                 },
             },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'upload',
+            `Upload de fichier: ${req.file.originalname || 'fichier'}`,
+            null,
+            null,
+            req.file.originalname,
+            { format: result.format, resourceType: result.resourceType, size: req.file.size },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -88,6 +104,21 @@ export const deleteFile = async (req, res, next) => {
             success: true,
             message: 'File deleted successfully',
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'delete',
+            `Suppression de fichier: ${decodedPublicId}`,
+            null,
+            null,
+            decodedPublicId,
+            null,
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }

@@ -43,6 +43,7 @@ import presencesRoutes from './routes/presences.js';
 import certificationsRoutes from './routes/certifications.js';
 import usersRoutes from './routes/users.js';
 import dashboardRoutes from './routes/dashboard.js';
+import activitiesRoutes from './routes/activities.js';
 
 // Configure Cloudinary AFTER environment variables are loaded
 configureCloudinary();
@@ -95,6 +96,7 @@ app.use('/api/seances', seancesRoutes);
 app.use('/api/presences', presencesRoutes);
 app.use('/api/certifications', certificationsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/activities', activitiesRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

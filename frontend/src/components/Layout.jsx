@@ -63,6 +63,13 @@ const Layout = () => {
                             <span>Mes Formations</span>
                         </Link>
                     )}
+
+                    <Link to="/history" className="nav-item">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M3 2a1 1 0 000 2h1a1 1 0 100-2H3zM3 6a1 1 0 000 2h1a1 1 0 100-2H3zM3 10a1 1 0 000 2h1a1 1 0 100-2H3zM7 4a1 1 0 110 2h8a1 1 0 110-2H7zm0 4a1 1 0 110 2h8a1 1 0 110-2H7zm0 4a1 1 0 110 2h8a1 1 0 110-2H7z" clipRule="evenodd" />
+                        </svg>
+                        <span>Historique</span>
+                    </Link>
                 </nav>
 
                 <div className="sidebar-footer">

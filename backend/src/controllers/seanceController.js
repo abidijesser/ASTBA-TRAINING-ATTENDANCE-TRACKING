@@ -1,6 +1,7 @@
 import Seance from '../models/Seance.js';
 import Presence from '../models/Presence.js';
 import EleveFormation from '../models/EleveFormation.js';
+import { logActivity } from './activityController.js';
 
 /**
  * Seance Controller
@@ -142,6 +143,21 @@ export const createSeance = async (req, res, next) => {
             message: 'Séance créée avec succès',
             data: { seance },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'create',
+            `Création d'une nouvelle séance: ${seance.nom}`,
+            'Seance',
+            seance._id,
+            seance.nom,
+            { date, heure_debut, heure_fin, type },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -190,6 +206,21 @@ export const updateSeance = async (req, res, next) => {
             message: 'Séance mise à jour avec succès',
             data: { seance },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'update',
+            `Modification de la séance: ${seance.nom}`,
+            'Seance',
+            seance._id,
+            seance.nom,
+            { nom, date, heure_debut, heure_fin, statut },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -211,12 +242,29 @@ export const deleteSeance = async (req, res, next) => {
             });
         }
 
+        const seanceName = seance.nom;
+
         await Seance.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
             success: true,
             message: 'Séance supprimée avec succès',
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'delete',
+            `Suppression de la séance: ${seanceName}`,
+            'Seance',
+            req.params.id,
+            seanceName,
+            null,
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -417,6 +465,21 @@ export const finishSeance = async (req, res, next) => {
                 nextLevel: formation.niveau_actuel
             }
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'update',
+            `Séance terminée: ${seance.nom}`,
+            'Seance',
+            seance._id,
+            seance.nom,
+            { levelCompleted, formationCompleted },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }

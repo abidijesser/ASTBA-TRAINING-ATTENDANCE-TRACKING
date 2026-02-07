@@ -2,6 +2,7 @@ import Certification from '../models/Certification.js';
 import Eleve from '../models/Eleve.js';
 import Formation from '../models/Formation.js';
 import { calculateStudentProgress } from '../utils/certificationHelper.js';
+import { logActivity } from './activityController.js';
 
 /**
  * Certification Controller
@@ -110,6 +111,23 @@ export const validateCertification = async (req, res, next) => {
             message: 'Certificat validé avec succès',
             data: { certification },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        const eleve = await Eleve.findById(eleve_id);
+        const formation = await Formation.findById(formation_id);
+        logActivity(
+            req.user._id,
+            certification.statut === 'valide' ? 'update' : 'create',
+            `Validation de certificat pour ${eleve?.nom || 'élève'} ${eleve?.prenom || ''} - ${formation?.nom || 'formation'}`,
+            'Certification',
+            certification._id,
+            `${eleve?.nom} ${eleve?.prenom}`,
+            { formation: formation?.nom },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }

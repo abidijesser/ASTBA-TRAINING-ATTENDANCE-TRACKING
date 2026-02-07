@@ -2,6 +2,7 @@ import Formation from '../models/Formation.js';
 import Niveau from '../models/Niveau.js';
 import Seance from '../models/Seance.js';
 import EleveFormation from '../models/EleveFormation.js';
+import { logActivity } from './activityController.js';
 
 /**
  * Formation Controller
@@ -143,6 +144,21 @@ export const createFormation = async (req, res, next) => {
             message: 'Formation créée avec succès',
             data: { formation },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'create',
+            `Création d'une nouvelle formation: ${nom}`,
+            'Formation',
+            formation._id,
+            nom,
+            { description, nombre_niveaux: 4 },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -191,6 +207,21 @@ export const updateFormation = async (req, res, next) => {
             message: 'Formation mise à jour avec succès',
             data: { formation },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'update',
+            `Modification de la formation: ${formation.nom}`,
+            'Formation',
+            formation._id,
+            formation.nom,
+            { nom, description, duree_estimee },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -212,12 +243,29 @@ export const deleteFormation = async (req, res, next) => {
             });
         }
 
+        const formationName = formation.nom;
+
         await Formation.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
             success: true,
             message: 'Formation supprimée avec succès',
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        logActivity(
+            req.user._id,
+            'delete',
+            `Suppression de la formation: ${formationName}`,
+            'Formation',
+            req.params.id,
+            formationName,
+            null,
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -282,6 +330,24 @@ export const assignStudentToFormation = async (req, res, next) => {
             message: 'Élève assigné à la formation avec succès',
             data: { enrollment },
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        const Eleve = (await import('../models/Eleve.js')).default;
+        const eleve = await Eleve.findById(eleve_id);
+        const formation = await Formation.findById(req.params.id);
+        logActivity(
+            req.user._id,
+            'assign',
+            `Assignation d'un élève à la formation: ${eleve?.nom || ''} ${eleve?.prenom || ''} → ${formation?.nom || ''}`,
+            'EleveFormation',
+            enrollment._id,
+            `${eleve?.nom} ${eleve?.prenom}`,
+            { formation: formation?.nom },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
@@ -310,6 +376,24 @@ export const removeStudentFromFormation = async (req, res, next) => {
             success: true,
             message: 'Élève retiré de la formation avec succès',
         });
+
+        // Log activity (non-blocking)
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        const Eleve = (await import('../models/Eleve.js')).default;
+        const eleve = await Eleve.findById(req.params.eleveId);
+        const formation = await Formation.findById(req.params.id);
+        logActivity(
+            req.user._id,
+            'delete',
+            `Retrait d'un élève de la formation: ${eleve?.nom || ''} ${eleve?.prenom || ''} de ${formation?.nom || ''}`,
+            'EleveFormation',
+            null,
+            `${eleve?.nom} ${eleve?.prenom}`,
+            { formation: formation?.nom },
+            ipAddress,
+            userAgent
+        ).catch((err) => console.error('Failed to log activity:', err));
     } catch (error) {
         next(error);
     }
