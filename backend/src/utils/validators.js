@@ -4,12 +4,18 @@ import { body, validationResult } from 'express-validator';
  * Validation rules for user registration
  */
 export const registerValidation = [
-    body('name')
+    body('nom')
         .trim()
         .notEmpty()
-        .withMessage('Name is required')
+        .withMessage('Le nom est requis')
         .isLength({ min: 2 })
-        .withMessage('Name must be at least 2 characters'),
+        .withMessage('Le nom doit contenir au moins 2 caractères'),
+    body('prenom')
+        .trim()
+        .notEmpty()
+        .withMessage('Le prénom est requis')
+        .isLength({ min: 2 })
+        .withMessage('Le prénom doit contenir au moins 2 caractères'),
     body('email')
         .trim()
         .notEmpty()

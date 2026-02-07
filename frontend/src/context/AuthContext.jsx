@@ -1,74 +1,8 @@
-import { createContext, useState, useEffect, useContext } from 'react';
-import { getCurrentUser, logout as logoutService } from '../services/authService';
+import { createContext, useState, useContext, useEffect } from 'react';
+import { authAPI } from '../api/auth';
 
-/**
- * Authentication Context
- * Provides authentication state and methods throughout the app
- */
+const AuthContext = createContext();
 
-const AuthContext = createContext(null);
-
-export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    /**
-     * Load user on app mount if token exists
-     */
-    useEffect(() => {
-        const loadUser = async () => {
-            const token = localStorage.getItem('token');
-
-            if (token) {
-                try {
-                    const response = await getCurrentUser();
-                    setUser(response.data.user);
-                } catch (err) {
-                    console.error('Failed to load user:', err);
-                    // Token is invalid, clear it
-                    logoutService();
-                }
-            }
-
-            setLoading(false);
-        };
-
-        loadUser();
-    }, []);
-
-    /**
-     * Login function - sets user state
-     * @param {Object} userData - User data from login response
-     */
-    const login = (userData) => {
-        setUser(userData);
-        setError(null);
-    };
-
-    /**
-     * Logout function - clears user state and localStorage
-     */
-    const logout = () => {
-        logoutService();
-        setUser(null);
-    };
-
-    const value = {
-        user,
-        loading,
-        error,
-        login,
-        logout,
-        isAuthenticated: !!user,
-    };
-
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-/**
- * Custom hook to use auth context
- */
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -77,4 +11,54 @@ export const useAuth = () => {
     return context;
 };
 
-export default AuthContext;
+export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        // Check if user is logged in on mount
+        checkAuth();
+    }, []);
+
+    const checkAuth = async () => {
+        try {
+            const response = await authAPI.getCurrentUser();
+            setUser(response.data.user);
+        } catch (error) {
+            setUser(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const login = async (credentials) => {
+        const response = await authAPI.login(credentials);
+        setUser(response.data.user);
+        return response;
+    };
+
+    const logout = async () => {
+        await authAPI.logout();
+        setUser(null);
+    };
+
+    const register = async (userData) => {
+        const response = await authAPI.register(userData);
+        setUser(response.data.user);
+        return response;
+    };
+
+    const value = {
+        user,
+        loading,
+        login,
+        logout,
+        register,
+        isAuthenticated: !!user,
+        isAdmin: user?.role === 'admin',
+        isResponsable: user?.role === 'responsable' || user?.role === 'admin',
+        isFormateur: user?.role === 'formateur' || user?.role === 'responsable' || user?.role === 'admin',
+    };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

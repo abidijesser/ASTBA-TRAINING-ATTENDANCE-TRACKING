@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { login as loginService } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { Button, Input, Card } from '../components/ui';
+import './Login.css';
 
 /**
  * Login Page
+ * Modern, professional login interface
  */
 const Login = () => {
     const navigate = useNavigate();
@@ -14,118 +16,126 @@ const Login = () => {
         email: '',
         password: '',
     });
-    const [error, setError] = useState('');
+    const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [generalError, setGeneralError] = useState('');
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
+        const { name, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+        // Clear error when user starts typing
+        if (errors[name]) {
+            setErrors((prev) => ({
+                ...prev,
+                [name]: '',
+            }));
+        }
+    };
+
+    const validate = () => {
+        const newErrors = {};
+
+        if (!formData.email) {
+            newErrors.email = "L'email est requis";
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Email invalide';
+        }
+
+        if (!formData.password) {
+            newErrors.password = 'Le mot de passe est requis';
+        }
+
+        return newErrors;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
+        setGeneralError('');
+
+        const newErrors = validate();
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
         setLoading(true);
 
         try {
-            const response = await loginService(formData);
-            login(response.data.user);
+            await login(formData);
             navigate('/dashboard');
-        } catch (err) {
-            setError(err.response?.data?.message || 'Login failed');
+        } catch (error) {
+            setGeneralError(
+                error.response?.data?.message || 'Erreur de connexion. Veuillez réessayer.'
+            );
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-            <h1 style={{ textAlign: 'center', color: '#1a1a2e' }}>Login</h1>
-
-            <form onSubmit={handleSubmit} style={{
-                backgroundColor: '#f8f9fa',
-                padding: '2rem',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-            }}>
-                {error && (
-                    <div style={{
-                        padding: '1rem',
-                        backgroundColor: '#ffe0e0',
-                        color: '#c00',
-                        borderRadius: '4px',
-                        marginBottom: '1rem'
-                    }}>
-                        {error}
+        <div className="login-container">
+            <div className="login-box">
+                <div className="login-header">
+                    <div className="login-logo">
+                        <div className="logo-icon">AS</div>
                     </div>
-                )}
-
-                <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Email
-                    </label>
-                    <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            fontSize: '1rem',
-                            boxSizing: 'border-box'
-                        }}
-                    />
+                    <h1 className="login-title">ASTBA</h1>
+                    <p className="login-subtitle">Système de Gestion de Formation</p>
                 </div>
 
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Password
-                    </label>
-                    <input
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            fontSize: '1rem',
-                            boxSizing: 'border-box'
-                        }}
-                    />
-                </div>
+                <Card>
+                    <form onSubmit={handleSubmit} className="login-form">
+                        {generalError && (
+                            <div className="login-error-banner">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                                {generalError}
+                            </div>
+                        )}
 
-                <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        backgroundColor: loading ? '#ccc' : '#3498db',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '1rem',
-                        cursor: loading ? 'not-allowed' : 'pointer',
-                        fontWeight: 'bold'
-                    }}
-                >
-                    {loading ? 'Logging in...' : 'Login'}
-                </button>
+                        <Input
+                            label="Email"
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="votreemail@exemple.com"
+                            error={errors.email}
+                            required
+                        />
 
-                <p style={{ textAlign: 'center', marginTop: '1rem', color: '#666' }}>
-                    Don't have an account? <Link to="/register" style={{ color: '#3498db' }}>Register here</Link>
+                        <Input
+                            label="Mot de passe"
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="••••••••"
+                            error={errors.password}
+                            required
+                        />
+
+                        <Button type="submit" fullWidth loading={loading}>
+                            Se connecter
+                        </Button>
+                    </form>
+                </Card>
+
+                <p className="login-footer">
+                    Première connexion ?{' '}
+                    <Link to="/register" className="login-link">
+                        Créer un compte
+                    </Link>
                 </p>
-            </form>
+            </div>
         </div>
     );
 };

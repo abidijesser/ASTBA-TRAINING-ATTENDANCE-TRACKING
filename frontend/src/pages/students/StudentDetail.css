@@ -1,0 +1,36 @@
+/**
+ * Student Detail Styles
+ */
+
+.student-detail {
+    max-width: var(--max-width);
+}
+
+.detail-grid {
+    display: grid;
+    gap: var(--space-6);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+}
+
+.info-item {
+    /* Individual info item styling */
+}
+
+.info-label {
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+    margin-bottom: var(--space-1);
+    font-weight: var(--font-medium);
+}
+
+.info-value {
+    font-size: var(--text-base);
+    color: var(--color-text-primary);
+    font-weight: var(--font-medium);
+}

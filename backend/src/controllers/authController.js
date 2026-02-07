@@ -7,12 +7,12 @@ import User from '../models/User.js';
 
 /**
  * @route   POST /api/auth/register
- * @desc    Register a new user
+ * @desc    Register a new user (admin only for role assignment)
  * @access  Public
  */
 export const register = async (req, res, next) => {
     try {
-        const { name, email, password } = req.body;
+        const { nom, prenom, email, password, role } = req.body;
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -25,13 +25,23 @@ export const register = async (req, res, next) => {
 
         // Create new user (password will be hashed by pre-save middleware)
         const user = await User.create({
-            name,
+            nom,
+            prenom,
             email,
             password,
+            role: role || 'formateur', // Default to formateur if not specified
         });
 
         // Generate JWT token
         const token = user.generateAuthToken();
+
+        // Set httpOnly cookie
+        res.cookie('token', token, {
+            httpOnly: true, // Cannot be accessed by JavaScript
+            secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+            sameSite: 'lax', // CSRF protection
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
 
         res.status(201).json({
             success: true,
@@ -39,11 +49,12 @@ export const register = async (req, res, next) => {
             data: {
                 user: {
                     id: user._id,
-                    name: user.name,
+                    nom: user.nom,
+                    prenom: user.prenom,
                     email: user.email,
+                    role: user.role,
                     avatar: user.avatar,
                 },
-                token,
             },
         });
     } catch (error) {
@@ -83,18 +94,49 @@ export const login = async (req, res, next) => {
         // Generate JWT token
         const token = user.generateAuthToken();
 
+        // Set httpOnly cookie
+        res.cookie('token', token, {
+            httpOnly: true, // Cannot be accessed by JavaScript
+            secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+            sameSite: 'lax', // CSRF protection
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
         res.status(200).json({
             success: true,
             message: 'Login successful',
             data: {
                 user: {
                     id: user._id,
-                    name: user.name,
+                    nom: user.nom,
+                    prenom: user.prenom,
                     email: user.email,
+                    role: user.role,
                     avatar: user.avatar,
                 },
-                token,
             },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Logout user and clear cookie
+ * @access  Public
+ */
+export const logout = async (req, res, next) => {
+    try {
+        // Clear the token cookie
+        res.cookie('token', '', {
+            httpOnly: true,
+            expires: new Date(0), // Expire immediately
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Logout successful',
         });
     } catch (error) {
         next(error);
@@ -116,9 +158,12 @@ export const getMe = async (req, res, next) => {
             data: {
                 user: {
                     id: user._id,
-                    name: user.name,
+                    nom: user.nom,
+                    prenom: user.prenom,
                     email: user.email,
+                    role: user.role,
                     avatar: user.avatar,
+                    formations_assignees: user.formations_assignees,
                     createdAt: user.createdAt,
                 },
             },

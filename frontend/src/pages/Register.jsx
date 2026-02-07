@@ -1,188 +1,208 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { register as registerService } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { Button, Input, Card } from '../components/ui';
+import './Login.css';
 
 /**
  * Register Page
+ * Create new admin/responsable/formateur account
  */
 const Register = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { register } = useAuth();
 
     const [formData, setFormData] = useState({
-        name: '',
+        nom: '',
+        prenom: '',
         email: '',
         password: '',
-        confirmPassword: '',
+        role: 'formateur',
     });
-    const [error, setError] = useState('');
+    const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [generalError, setGeneralError] = useState('');
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
+        const { name, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+        if (errors[name]) {
+            setErrors((prev) => ({
+                ...prev,
+                [name]: '',
+            }));
+        }
+    };
+
+    const validate = () => {
+        const newErrors = {};
+
+        if (!formData.nom) {
+            newErrors.nom = 'Le nom est requis';
+        }
+
+        if (!formData.prenom) {
+            newErrors.prenom = 'Le prénom est requis';
+        }
+
+        if (!formData.email) {
+            newErrors.email = "L'email est requis";
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Email invalide';
+        }
+
+        if (!formData.password) {
+            newErrors.password = 'Le mot de passe est requis';
+        } else if (formData.password.length < 6) {
+            newErrors.password = 'Minimum 6 caractères';
+        }
+
+        return newErrors;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
+        setGeneralError('');
 
-        // Client-side validation
-        if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-
-        if (formData.password.length < 6) {
-            setError('Password must be at least 6 characters');
+        const newErrors = validate();
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
         setLoading(true);
 
         try {
-            const { confirmPassword, ...registerData } = formData;
-            const response = await registerService(registerData);
-            login(response.data.user);
+            console.log('Sending registration data:', formData);
+            await register(formData);
             navigate('/dashboard');
-        } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed');
+        } catch (error) {
+            console.error('Registration Error:', error);
+            console.error('Error Response:', error.response);
+
+            if (error.response?.data?.errors) {
+                const backendErrors = {};
+                error.response.data.errors.forEach(err => {
+                    // Map backend field names to frontend state names if needed
+                    // The validator uses 'path' which matches our field names (nom, prenom, etc)
+                    backendErrors[err.field] = err.message;
+                });
+                setErrors(backendErrors);
+                setGeneralError("Veuillez corriger les erreurs ci-dessous.");
+            } else {
+                const errorMessage = error.response?.data?.message ||
+                    error.message ||
+                    "Erreur lors de l'inscription. Veuillez réessayer.";
+                setGeneralError(errorMessage);
+            }
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-            <h1 style={{ textAlign: 'center', color: '#1a1a2e' }}>Register</h1>
-
-            <form onSubmit={handleSubmit} style={{
-                backgroundColor: '#f8f9fa',
-                padding: '2rem',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-            }}>
-                {error && (
-                    <div style={{
-                        padding: '1rem',
-                        backgroundColor: '#ffe0e0',
-                        color: '#c00',
-                        borderRadius: '4px',
-                        marginBottom: '1rem'
-                    }}>
-                        {error}
+        <div className="login-container">
+            <div className="login-box">
+                <div className="login-header">
+                    <div className="login-logo">
+                        <div className="logo-icon">AS</div>
                     </div>
-                )}
-
-                <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Name
-                    </label>
-                    <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            fontSize: '1rem',
-                            boxSizing: 'border-box'
-                        }}
-                    />
+                    <h1 className="login-title">ASTBA</h1>
+                    <p className="login-subtitle">Créer un compte</p>
                 </div>
 
-                <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Email
-                    </label>
-                    <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            fontSize: '1rem',
-                            boxSizing: 'border-box'
-                        }}
-                    />
-                </div>
+                <Card>
+                    <form onSubmit={handleSubmit} className="login-form">
+                        {generalError && (
+                            <div className="login-error-banner" style={{ whiteSpace: 'pre-wrap' }}>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                                {generalError}
+                            </div>
+                        )}
 
-                <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Password
-                    </label>
-                    <input
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            fontSize: '1rem',
-                            boxSizing: 'border-box'
-                        }}
-                    />
-                </div>
+                        <Input
+                            label="Nom"
+                            type="text"
+                            name="nom"
+                            value={formData.nom}
+                            onChange={handleChange}
+                            placeholder="Votre nom"
+                            error={errors.nom}
+                            required
+                        />
 
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Confirm Password
-                    </label>
-                    <input
-                        type="password"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        required
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            fontSize: '1rem',
-                            boxSizing: 'border-box'
-                        }}
-                    />
-                </div>
+                        <Input
+                            label="Prénom"
+                            type="text"
+                            name="prenom"
+                            value={formData.prenom}
+                            onChange={handleChange}
+                            placeholder="Votre prénom"
+                            error={errors.prenom}
+                            required
+                        />
 
-                <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        backgroundColor: loading ? '#ccc' : '#2ecc71',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '1rem',
-                        cursor: loading ? 'not-allowed' : 'pointer',
-                        fontWeight: 'bold'
-                    }}
-                >
-                    {loading ? 'Registering...' : 'Register'}
-                </button>
+                        <Input
+                            label="Email"
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="votreemail@exemple.com"
+                            error={errors.email}
+                            required
+                        />
 
-                <p style={{ textAlign: 'center', marginTop: '1rem', color: '#666' }}>
-                    Already have an account? <Link to="/login" style={{ color: '#3498db' }}>Login here</Link>
+                        <Input
+                            label="Mot de passe"
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="••••••••"
+                            error={errors.password}
+                            required
+                        />
+
+                        <div className="input-group">
+                            <label htmlFor="role" className="input-label">
+                                Rôle <span className="input-required">*</span>
+                            </label>
+                            <select
+                                id="role"
+                                name="role"
+                                value={formData.role}
+                                onChange={handleChange}
+                                className="input"
+                            >
+                                <option value="formateur">Formateur</option>
+                                <option value="responsable">Responsable</option>
+                                <option value="admin">Administrateur</option>
+                            </select>
+                        </div>
+
+                        <Button type="submit" fullWidth loading={loading}>
+                            Créer un compte
+                        </Button>
+                    </form>
+                </Card>
+
+                <p className="login-footer">
+                    Déjà inscrit ?{' '}
+                    <Link to="/login" className="login-link">
+                        Se connecter
+                    </Link>
                 </p>
-            </form>
+            </div>
         </div>
     );
 };

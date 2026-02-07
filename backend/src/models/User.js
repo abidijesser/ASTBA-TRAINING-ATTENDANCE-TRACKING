@@ -4,31 +4,49 @@ import jwt from 'jsonwebtoken';
 
 const userSchema = new mongoose.Schema(
     {
-        name: {
+        nom: {
             type: String,
-            required: [true, 'Please provide a name'],
+            required: [true, 'Le nom est requis'],
+            trim: true,
+        },
+        prenom: {
+            type: String,
+            required: [true, 'Le prénom est requis'],
             trim: true,
         },
         email: {
             type: String,
-            required: [true, 'Please provide an email'],
+            required: [true, "L'email est requis"],
             unique: true,
             lowercase: true,
             trim: true,
-            match: [
-                /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-                'Please provide a valid email',
-            ],
+            match: [/^\S+@\S+\.\S+$/, 'Veuillez fournir un email valide'],
         },
         password: {
             type: String,
-            required: [true, 'Please provide a password'],
-            minlength: [6, 'Password must be at least 6 characters'],
-            select: false, // Don't return password by default in queries
+            required: [true, 'Le mot de passe est requis'],
+            minlength: [6, 'Le mot de passe doit contenir au moins 6 caractères'],
+            select: false, // Don't return password by default
         },
+        role: {
+            type: String,
+            enum: ['formateur', 'responsable', 'admin'],
+            default: 'formateur',
+            required: true,
+        },
+        formations_assignees: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Formation',
+            },
+        ],
         avatar: {
             type: String,
             default: '',
+        },
+        actif: {
+            type: Boolean,
+            default: true,
         },
     },
     {

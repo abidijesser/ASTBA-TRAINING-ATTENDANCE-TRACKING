@@ -1,0 +1,28 @@
+import api from './axios';
+
+export const certificationAPI = {
+    getAll: async () => {
+        const response = await api.get('/certifications');
+        return response.data;
+    },
+    getById: async (id) => {
+        const response = await api.get(`/certifications/${id}`);
+        return response.data;
+    },
+    validate: async (data) => {
+        const response = await api.post('/certifications/validate', data);
+        return response.data;
+    },
+    getByStudent: async (studentId) => {
+        const response = await api.get(`/certifications/student/${studentId}`);
+        return response.data;
+    },
+    generateBulk: async (formationId) => {
+        const response = await api.post(`/certifications/generate-bulk/${formationId}`);
+        return response.data;
+    },
+    download: async (id) => {
+        const response = await api.get(`/certifications/${id}/download`);
+        return response.data;
+    }
+};

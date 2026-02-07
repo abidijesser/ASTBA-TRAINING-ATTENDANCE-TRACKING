@@ -1,0 +1,70 @@
+.session-detail {
+    max-width: var(--max-width);
+}
+
+.attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--space-4);
+}
+
+.attendance-table th {
+    text-align: left;
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+}
+
+.attendance-table td {
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.attendance-table tr:last-child td {
+    border-bottom: none;
+}
+
+.status-buttons {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.status-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-border);
+    background: white;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: var(--text-xs);
+    transition: all var(--transition-fast);
+}
+
+.status-btn:hover {
+    transform: scale(1.1);
+}
+
+.status-btn.present.active {
+    background: var(--color-success);
+    color: white;
+    border-color: var(--color-success);
+}
+
+.status-btn.absent.active {
+    background: var(--color-danger);
+    color: white;
+    border-color: var(--color-danger);
+}
+
+.status-btn.retard.active {
+    background: var(--color-warning);
+    color: white;
+    border-color: var(--color-warning);
+}
+
+.status-btn.excuse.active {
+    background: var(--color-info);
+    color: white;
+    border-color: var(--color-info);
+}

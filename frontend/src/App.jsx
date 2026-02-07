@@ -1,37 +1,58 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-import Home from './pages/Home';
+
+// Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import StudentList from './pages/students/StudentList';
+import StudentDetail from './pages/students/StudentDetail';
+import FormationList from './pages/formations/FormationList';
+import FormationDetail from './pages/formations/FormationDetail';
+import SessionList from './pages/sessions/SessionList';
+import SessionDetail from './pages/sessions/SessionDetail';
+import CertificationList from './pages/certifications/CertificationList';
 
-/**
- * Main App Component
- * Configures routing and authentication
- */
+// Layout
+import Layout from './components/Layout';
+
 function App() {
     return (
-        <Router>
-            <AuthProvider>
-                <Layout>
-                    <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route
-                            path="/dashboard"
-                            element={
-                                <ProtectedRoute>
-                                    <Dashboard />
-                                </ProtectedRoute>
-                            }
-                        />
-                    </Routes>
-                </Layout>
-            </AuthProvider>
-        </Router>
+        <AuthProvider>
+            <BrowserRouter>
+                <Routes>
+                    {/* Public Routes */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+
+                    {/* Protected Routes */}
+                    <Route
+                        path="/"
+                        element={
+                            <ProtectedRoute>
+                                <Layout />
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route index element={<Navigate to="/dashboard" replace />} />
+                        <Route path="dashboard" element={<Dashboard />} />
+                        <Route path="students" element={<StudentList />} />
+                        <Route path="students/:id" element={<StudentDetail />} />
+
+                        <Route path="formations" element={<FormationList />} />
+                        <Route path="formations/:id" element={<FormationDetail />} />
+
+                        <Route path="sessions" element={<SessionList />} />
+                        <Route path="sessions/:id" element={<SessionDetail />} />
+                        <Route path="certifications" element={<CertificationList />} />
+                    </Route>
+
+                    {/* Catch all */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </BrowserRouter>
+        </AuthProvider>
     );
 }
 

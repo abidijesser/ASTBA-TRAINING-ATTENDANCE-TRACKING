@@ -1,0 +1,66 @@
+.certification-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+}
+
+.certification-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-5);
+    transition: transform 0.2s;
+}
+
+.certification-card:hover {
+    transform: translateY(-4px);
+}
+
+.cert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+}
+
+.cert-number {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    background: var(--color-bg-tertiary);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+}
+
+.cert-body h3 {
+    margin: 0 0 var(--space-1) 0;
+    font-size: 1.25rem;
+}
+
+.formation-name {
+    color: var(--color-primary);
+    font-weight: 500;
+    margin-bottom: var(--space-4);
+}
+
+.cert-meta {
+    display: flex;
+    gap: var(--space-4);
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-5);
+}
+
+.cert-footer {
+    margin-top: auto;
+}
+
+.status-badge.valide {
+    background-color: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.status-badge.en_attente {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning);
+}

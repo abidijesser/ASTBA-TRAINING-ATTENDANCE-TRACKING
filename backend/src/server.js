@@ -1,3 +1,4 @@
+// Server entry point
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -26,6 +27,7 @@ console.log('Environment variables loaded:', {
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import connectDB from './config/database.js';
 import { configureCloudinary } from './config/cloudinary.js';
 import errorHandler from './middleware/errorHandler.js';
@@ -33,6 +35,13 @@ import errorHandler from './middleware/errorHandler.js';
 // Import routes
 import authRoutes from './routes/auth.js';
 import uploadRoutes from './routes/upload.js';
+import elevesRoutes from './routes/eleves.js';
+import formationsRoutes from './routes/formations.js';
+import niveauxRoutes from './routes/niveaux.js';
+import seancesRoutes from './routes/seances.js';
+import presencesRoutes from './routes/presences.js';
+import certificationsRoutes from './routes/certifications.js';
+import usersRoutes from './routes/users.js';
 
 // Configure Cloudinary AFTER environment variables are loaded
 configureCloudinary();
@@ -47,13 +56,21 @@ connectDB();
  * Middleware Configuration
  */
 
-// CORS - Allow cross-origin requests
+// CORS - Allow cross-origin requests with credentials
+// CORS - Allow cross-origin requests with credentials
 app.use(
     cors({
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
-        credentials: true,
+        origin: [
+            process.env.CLIENT_URL || 'http://localhost:5173',
+            'http://localhost:5174',
+            'http://localhost:3000'
+        ],
+        credentials: true, // Allow cookies to be sent from frontend
     })
 );
+
+// Cookie parser - Parse cookies from request
+app.use(cookieParser());
 
 // Body parser - Parse JSON request bodies
 app.use(express.json());
@@ -68,7 +85,14 @@ if (process.env.NODE_ENV === 'development') {
  * Routes
  */
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/eleves', elevesRoutes);
+app.use('/api/formations', formationsRoutes);
+app.use('/api/niveaux', niveauxRoutes);
+app.use('/api/seances', seancesRoutes);
+app.use('/api/presences', presencesRoutes);
+app.use('/api/certifications', certificationsRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

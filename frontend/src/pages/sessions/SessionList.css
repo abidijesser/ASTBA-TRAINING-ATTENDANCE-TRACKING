@@ -1,0 +1,5 @@
+.session-list {
+    max-width: var(--max-width);
+}
+
+/* Reusing generic styles from other pages where possible */

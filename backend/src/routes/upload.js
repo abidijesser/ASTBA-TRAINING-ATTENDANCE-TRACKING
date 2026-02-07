@@ -1,7 +1,7 @@
 import express from 'express';
 import { uploadFile, deleteFile } from '../controllers/uploadController.js';
 import { protect } from '../middleware/auth.js';
-import { uploadSingle, handleUploadError } from '../middleware/upload.js';
+import { upload } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ const router = express.Router();
  */
 
 // Upload file
-router.post('/', protect, uploadSingle, handleUploadError, uploadFile);
+router.post('/', protect, upload.single('file'), uploadFile);
 
 // Delete file
 router.delete('/:publicId', protect, deleteFile);
