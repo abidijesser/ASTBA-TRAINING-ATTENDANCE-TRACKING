@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui';
+import { dashboardAPI } from '../api/dashboard';
 import './Dashboard.css';
 
 /**
@@ -9,6 +11,28 @@ import './Dashboard.css';
  */
 const Dashboard = () => {
     const { user } = useAuth();
+    const [stats, setStats] = useState({
+        students: 0,
+        activeFormations: 0,
+        sessionsToday: 0,
+        certifications: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await dashboardAPI.getStats();
+                setStats(response.data);
+            } catch (error) {
+                console.error('Error fetching dashboard stats:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
 
     return (
         <div className="dashboard">
@@ -26,7 +50,7 @@ const Dashboard = () => {
                     </div>
                     <div className="stat-content">
                         <div className="stat-label">Élèves inscrits</div>
-                        <div className="stat-value">--</div>
+                        <div className="stat-value">{loading ? '...' : stats.students}</div>
                     </div>
                 </Card>
 
@@ -38,7 +62,7 @@ const Dashboard = () => {
                     </div>
                     <div className="stat-content">
                         <div className="stat-label">Formations actives</div>
-                        <div className="stat-value">--</div>
+                        <div className="stat-value">{loading ? '...' : stats.activeFormations}</div>
                     </div>
                 </Card>
 
@@ -50,7 +74,7 @@ const Dashboard = () => {
                     </div>
                     <div className="stat-content">
                         <div className="stat-label">Séances aujourd'hui</div>
-                        <div className="stat-value">--</div>
+                        <div className="stat-value">{loading ? '...' : stats.sessionsToday}</div>
                     </div>
                 </Card>
 
@@ -62,7 +86,7 @@ const Dashboard = () => {
                     </div>
                     <div className="stat-content">
                         <div className="stat-label">Certifications</div>
-                        <div className="stat-value">--</div>
+                        <div className="stat-value">{loading ? '...' : stats.certifications}</div>
                     </div>
                 </Card>
             </div>

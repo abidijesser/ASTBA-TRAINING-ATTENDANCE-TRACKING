@@ -250,11 +250,40 @@ const FormationDetail = () => {
                     <div className="levels-list">
                         {formation.niveaux?.map((niveau, index) => (
                             <div key={niveau._id} className={`level-item ${formation.niveau_actuel === niveau.numero ? 'current-level' : ''}`}>
-                                <div className="level-number">{index + 1}</div>
-                                <div className="level-info">
-                                    <h4>{niveau.titre}</h4>
-                                    <p>{niveau.description}</p>
-                                    <span className="level-status">{niveau.statut}</span>
+                                <div className="level-header-row">
+                                    <div className="level-number">{index + 1}</div>
+                                    <div className="level-info">
+                                        <h4>{niveau.nom}</h4>
+                                        <p>{niveau.description}</p>
+                                    </div>
+                                    <span className={`level-status-badge ${formation.niveau_actuel > niveau.numero ? 'completed' : formation.niveau_actuel === niveau.numero ? 'active' : 'locked'}`}>
+                                        {formation.niveau_actuel > niveau.numero ? 'Terminé' : formation.niveau_actuel === niveau.numero ? 'En cours' : 'Bloqué'}
+                                    </span>
+                                </div>
+
+                                <div className="level-sessions">
+                                    <h5>Séances du niveau</h5>
+                                    <div className="sessions-list-mini">
+                                        {niveau.seances?.map((seance) => (
+                                            <div key={seance._id} className={`session-item-mini ${seance.statut}`}>
+                                                <div className="session-mini-info">
+                                                    <span className="session-num">S{seance.numero}</span>
+                                                    <span className="session-date">{new Date(seance.date).toLocaleDateString()}</span>
+                                                </div>
+                                                <Button
+                                                    size="small"
+                                                    variant="ghost"
+                                                    onClick={() => navigate(`/sessions/${seance._id}`)}
+                                                    disabled={formation.niveau_actuel < niveau.numero}
+                                                >
+                                                    {seance.statut === 'terminee' ? 'Consulter' : 'Gérer'}
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        {(!niveau.seances || niveau.seances.length === 0) && (
+                                            <p className="no-sessions">Aucune séance générée.</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}

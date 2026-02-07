@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { studentAPI } from '../../api/students';
+import { formationAPI } from '../../api/formations';
 import { Button, Card, Modal, Input } from '../../components/ui';
 import './StudentDetail.css';
 
@@ -12,9 +13,10 @@ import './StudentDetail.css';
 const StudentDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { isResponsable } = useAuth(); // Need to import useAuth
+    const { isResponsable } = useAuth();
     const [student, setStudent] = useState(null);
-    const [formations, setFormations] = useState([]);
+    const [studentFormations, setStudentFormations] = useState([]);
+    const [allFormations, setAllFormations] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Edit State
@@ -25,14 +27,18 @@ const StudentDetail = () => {
         email: '',
         telephone: '',
         date_naissance: '',
-        adresse: ''
+        adresse: '',
+        selectedFormation: ''
     });
     const [updating, setUpdating] = useState(false);
 
     useEffect(() => {
         fetchStudent();
-        fetchFormations();
-    }, [id]);
+        fetchStudentFormations();
+        if (isResponsable) {
+            fetchAllFormations();
+        }
+    }, [id, isResponsable]);
 
     const fetchStudent = async () => {
         try {
@@ -46,12 +52,23 @@ const StudentDetail = () => {
         }
     };
 
-    const fetchFormations = async () => {
+    const fetchStudentFormations = async () => {
         try {
             const response = await studentAPI.getFormations(id);
-            setFormations(response.data.formations);
+            setStudentFormations(response.data.formations);
         } catch (error) {
-            console.error('Error fetching formations:', error);
+            console.error('Error fetching student formations:', error);
+        }
+    };
+
+    const fetchAllFormations = async () => {
+        try {
+            // Fetch only non-active or all? The user said "affecter un eleve a une formation"
+            // Usually we assign to formations that are not yet active (open for registration)
+            const response = await formationAPI.getAll();
+            setAllFormations(response.data.formations || []);
+        } catch (error) {
+            console.error('Error fetching all formations:', error);
         }
     };
 
@@ -62,7 +79,8 @@ const StudentDetail = () => {
             email: student.email,
             telephone: student.telephone,
             date_naissance: student.date_naissance ? new Date(student.date_naissance).toISOString().split('T')[0] : '',
-            adresse: student.adresse || ''
+            adresse: student.adresse || '',
+            selectedFormation: '' // Reset selection on edit click
         });
         setShowEditModal(true);
     };
@@ -71,10 +89,25 @@ const StudentDetail = () => {
         e.preventDefault();
         try {
             setUpdating(true);
-            await studentAPI.update(id, editData);
+
+            // 1. Update basic info
+            const { selectedFormation, ...basicInfo } = editData;
+            await studentAPI.update(id, basicInfo);
+
+            // 2. Handle formation assignment if selected
+            if (selectedFormation) {
+                try {
+                    await formationAPI.assignStudent(selectedFormation, id);
+                } catch (assignError) {
+                    console.error('Error assigning formation:', assignError);
+                    alert('L\'élève a été mis à jour, mais l\'assignation à la formation a échoué (déjà inscrit ?)');
+                }
+            }
+
             fetchStudent();
+            fetchStudentFormations();
             setShowEditModal(false);
-            alert('Élève mis à jour avec succès');
+            alert('Données mises à jour avec succès');
         } catch (error) {
             console.error('Error updating student:', error);
             alert('Erreur lors de la mise à jour');
@@ -151,9 +184,9 @@ const StudentDetail = () => {
 
                 <Card>
                     <h3>Formations</h3>
-                    {formations.length > 0 ? (
+                    {studentFormations.length > 0 ? (
                         <div className="formations-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {formations.map((f) => (
+                            {studentFormations.map((f) => (
                                 <div key={f._id} style={{
                                     padding: '10px',
                                     border: '1px solid var(--color-border)',
@@ -231,6 +264,32 @@ const StudentDetail = () => {
                         value={editData.adresse}
                         onChange={handleEditChange}
                     />
+
+                    {isResponsable && (
+                        <div className="input-group">
+                            <label className="input-label">Assigner à une nouvelle formation</label>
+                            <select
+                                className="input"
+                                name="selectedFormation"
+                                value={editData.selectedFormation}
+                                onChange={handleEditChange}
+                            >
+                                <option value="">-- Ne pas changer / Pas d'assignation --</option>
+                                {allFormations
+                                    .filter(f => f.actif) // Only show active formations
+                                    .filter(f => !studentFormations.some(sf => sf.formation_id?._id === f._id)) // Only show ones not already in
+                                    .map(formation => (
+                                        <option key={formation._id} value={formation._id}>
+                                            {formation.nom}
+                                        </option>
+                                    ))}
+                            </select>
+                            <p className="helper-text">
+                                L'élève sera ajouté au niveau 1 de la formation sélectionnée.
+                            </p>
+                        </div>
+                    )}
+
                     <div className="modal-actions">
                         <Button type="submit" loading={updating} fullWidth>
                             Enregistrer

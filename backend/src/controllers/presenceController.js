@@ -20,13 +20,30 @@ export const markBulkAttendance = async (req, res, next) => {
         const { attendances } = req.body; // Array of { eleve_id, statut, remarques? }
         const seanceId = req.params.seanceId;
 
-        // Verify session exists
-        const seance = await Seance.findById(seanceId).populate('niveau_id');
+        // Verify session exists and populate formation for access check
+        const seance = await Seance.findById(seanceId).populate({
+            path: 'niveau_id',
+            populate: { path: 'formation_id' }
+        });
+
         if (!seance) {
             return res.status(404).json({
                 success: false,
                 message: 'Séance non trouvée',
             });
+        }
+
+        const formation = seance.niveau_id.formation_id;
+
+        // Access Check
+        if (req.user.role === 'formateur') {
+            const isAssigned = formation.responsable_id.toString() === req.user._id.toString();
+            if (!isAssigned) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Accès refusé. Vous n'êtes pas assigné à cette formation.",
+                });
+            }
         }
 
         const results = [];

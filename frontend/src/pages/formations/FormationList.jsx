@@ -7,7 +7,7 @@ import { Button, Card, Modal, Input } from '../../components/ui';
 import './FormationList.css';
 
 const FormationList = () => {
-    const { isResponsable } = useAuth();
+    const { user, isResponsable } = useAuth();
     const [formations, setFormations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -91,12 +91,15 @@ const FormationList = () => {
         }
     };
 
+    // Role check specifically for formateur vs manage roles
+    const showAsTable = user?.role === 'formateur';
+
     return (
         <div className="formation-list">
             <div className="page-header">
                 <div>
-                    <h1>Formations</h1>
-                    <p>Gérer le catalogue des formations</p>
+                    <h1>{showAsTable ? 'Mes Formations' : 'Formations'}</h1>
+                    <p>{showAsTable ? 'Liste des formations vous étant assignées' : 'Gérer le catalogue des formations'}</p>
                 </div>
                 {isResponsable && (
                     <Button onClick={() => setShowCreateModal(true)}>
@@ -110,6 +113,43 @@ const FormationList = () => {
             ) : formations.length === 0 ? (
                 <Card className="empty-state">
                     <p>Aucune formation trouvée</p>
+                </Card>
+            ) : showAsTable ? (
+                <Card className="table-card">
+                    <div className="table-container">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Formation</th>
+                                    <th>Description</th>
+                                    <th>Date Début</th>
+                                    <th>Durée</th>
+                                    <th>Niveau</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {formations.map((formation) => (
+                                    <tr key={formation._id}>
+                                        <td className="bold">{formation.nom}</td>
+                                        <td className="text-muted">{formation.description?.substring(0, 60)}...</td>
+                                        <td>{new Date(formation.date_debut).toLocaleDateString()}</td>
+                                        <td>{formation.duree_mois} mois</td>
+                                        <td>
+                                            <span className="badge-info">{formation.niveau_requis}</span>
+                                        </td>
+                                        <td>
+                                            <Link to={`/formations/${formation._id}`}>
+                                                <Button variant="ghost" size="small">
+                                                    Consulter
+                                                </Button>
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </Card>
             ) : (
                 <div className="formations-grid">
@@ -178,7 +218,7 @@ const FormationList = () => {
                             <option value="">-- Sélectionner un formateur --</option>
                             {formateurs.map(f => (
                                 <option key={f._id} value={f._id}>
-                                    {f.nom} {f.prenom} 
+                                    {f.nom} {f.prenom}
                                 </option>
                             ))}
                         </select>

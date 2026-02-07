@@ -31,6 +31,6 @@ router.delete('/:id', protect, isAdmin, deleteNiveau);
 router.get('/:niveauId/seances', protect, isFormateur, getSeancesByNiveau);
 
 // Create seance for niveau
-router.post('/:niveauId/seances', protect, isFormateur, createSeance);
+router.post('/:niveauId/seances', protect, isResponsable, createSeance);
 
 export default router;

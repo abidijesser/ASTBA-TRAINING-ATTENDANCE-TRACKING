@@ -7,6 +7,7 @@ import {
     deleteSeance,
     getSeanceAttendance,
     getAllSeances,
+    finishSeance,
 } from '../controllers/seanceController.js';
 import { markBulkAttendance } from '../controllers/presenceController.js';
 import { protect, isResponsable, isAdmin, isFormateur } from '../middleware/auth.js';
@@ -34,5 +35,8 @@ router.get('/:id/attendance', protect, isFormateur, getSeanceAttendance);
 
 // Mark attendance (bulk)
 router.post('/:seanceId/mark-attendance', protect, isFormateur, markBulkAttendance);
+
+// Finish seance
+router.post('/:id/finish', protect, isFormateur, finishSeance);
 
 export default router;

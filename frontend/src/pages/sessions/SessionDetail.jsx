@@ -28,10 +28,17 @@ const SessionDetail = () => {
             const attendanceRes = await sessionAPI.getAttendance(id);
             setStudents(attendanceRes.data);
 
-            // Initialize attendance map
+            // Initialize attendance map with status mapping
             const initialMap = {};
             attendanceRes.data.forEach(student => {
-                initialMap[student._id] = student.statut || 'Absent';
+                // Map backend enums to UI labels
+                let uiStatus = 'Absent';
+                if (student.statut === 'present') uiStatus = 'Présent';
+                else if (student.statut === 'absent') uiStatus = 'Absent';
+                else if (student.statut === 'retard') uiStatus = 'Retard';
+                else if (student.statut === 'justifie') uiStatus = 'Excusé';
+
+                initialMap[student._id] = uiStatus;
             });
             setAttendanceMap(initialMap);
 
@@ -52,12 +59,22 @@ const SessionDetail = () => {
     const handleSaveAttendance = async () => {
         try {
             setSubmitting(true);
-            const attendanceData = Object.entries(attendanceMap).map(([eleveId, statut]) => ({
-                eleveId,
-                statut
+
+            // Map UI labels back to backend enums
+            const statusMap = {
+                'Présent': 'present',
+                'Absent': 'absent',
+                'Retard': 'retard',
+                'Excusé': 'justifie'
+            };
+
+            const attendanceData = Object.entries(attendanceMap).map(([eleve_id, uiStatus]) => ({
+                eleve_id,
+                statut: statusMap[uiStatus] || 'absent'
             }));
 
-            await sessionAPI.markAttendance(id, { presences: attendanceData });
+            // The sessionAPI.markAttendance helper already wraps the argument in { attendances: ... }
+            await sessionAPI.markAttendance(id, attendanceData);
             alert('Présences enregistrées avec succès !');
             fetchSessionData(); // Refresh data
         } catch (error) {
@@ -68,8 +85,26 @@ const SessionDetail = () => {
         }
     };
 
+    const handleFinishSession = async () => {
+        if (!window.confirm('Êtes-vous sûr de vouloir terminer cette séance ? Cette action est irréversible.')) return;
+
+        try {
+            setSubmitting(true);
+            const res = await sessionAPI.finish(id);
+            alert(res.message || 'Séance terminée avec succès !');
+            fetchSessionData();
+        } catch (error) {
+            console.error('Error finishing session:', error);
+            alert(error.response?.data?.message || 'Erreur lors de la validation de la séance');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     if (loading) return <div className="loading-state">Chargement...</div>;
     if (!session) return <div className="empty-state">Séance non trouvée</div>;
+
+    const isFinished = session.statut === 'terminee';
 
     return (
         <div className="session-detail">
@@ -79,12 +114,26 @@ const SessionDetail = () => {
                         ← Retour aux séances
                     </Button>
                     <h1>Séance du {new Date(session.date).toLocaleDateString()}</h1>
-                    <p>{session.niveau_id?.nom} - {session.type}</p>
+                    <div className="session-status-badges">
+                        <span className={`badge level-badge`}>{session.niveau_id?.nom}</span>
+                        <span className={`badge type-badge`}>{session.type}</span>
+                        <span className={`badge status-badge ${session.statut}`}>{session.statut}</span>
+                    </div>
                 </div>
                 <div className="header-actions">
-                    <Button onClick={handleSaveAttendance} loading={submitting}>
-                        Enregistrer les présences
-                    </Button>
+                    {!isFinished && (
+                        <>
+                            <Button onClick={handleSaveAttendance} loading={submitting} variant="secondary">
+                                Enregistrer les présences
+                            </Button>
+                            <Button onClick={handleFinishSession} loading={submitting} variant="primary">
+                                Terminer la séance
+                            </Button>
+                        </>
+                    )}
+                    {isFinished && (
+                        <span className="finished-message">✅ Séance terminée</span>
+                    )}
                 </div>
             </div>
 
@@ -125,25 +174,29 @@ const SessionDetail = () => {
                                                 <div className="status-buttons">
                                                     <button
                                                         className={`status-btn present ${attendanceMap[student._id] === 'Présent' ? 'active' : ''}`}
-                                                        onClick={() => handleAttendanceChange(student._id, 'Présent')}
+                                                        onClick={() => !isFinished && handleAttendanceChange(student._id, 'Présent')}
+                                                        disabled={isFinished}
                                                     >
                                                         P
                                                     </button>
                                                     <button
                                                         className={`status-btn absent ${attendanceMap[student._id] === 'Absent' ? 'active' : ''}`}
-                                                        onClick={() => handleAttendanceChange(student._id, 'Absent')}
+                                                        onClick={() => !isFinished && handleAttendanceChange(student._id, 'Absent')}
+                                                        disabled={isFinished}
                                                     >
                                                         A
                                                     </button>
                                                     <button
                                                         className={`status-btn retard ${attendanceMap[student._id] === 'Retard' ? 'active' : ''}`}
-                                                        onClick={() => handleAttendanceChange(student._id, 'Retard')}
+                                                        onClick={() => !isFinished && handleAttendanceChange(student._id, 'Retard')}
+                                                        disabled={isFinished}
                                                     >
                                                         R
                                                     </button>
                                                     <button
                                                         className={`status-btn excuse ${attendanceMap[student._id] === 'Excusé' ? 'active' : ''}`}
-                                                        onClick={() => handleAttendanceChange(student._id, 'Excusé')}
+                                                        onClick={() => !isFinished && handleAttendanceChange(student._id, 'Excusé')}
+                                                        disabled={isFinished}
                                                     >
                                                         E
                                                     </button>

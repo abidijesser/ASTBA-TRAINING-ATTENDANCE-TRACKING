@@ -2,4 +2,60 @@
     max-width: var(--max-width);
 }
 
+.session-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
+}
+
+.session-type {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.session-type.presentiel {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.session-type.en-ligne {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.session-status-badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: capitalize;
+}
+
+.session-status-badge.planifiee {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.session-status-badge.terminee {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.session-card.locked {
+    opacity: 0.6;
+    filter: grayscale(0.5);
+    background: #f9fafb;
+}
+
+.session-card.finished {
+    border-left: 4px solid var(--success);
+}
+
+.action-link {
+    text-decoration: none;
+}
+
 /* Reusing generic styles from other pages where possible */

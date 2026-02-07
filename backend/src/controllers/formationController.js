@@ -1,5 +1,6 @@
 import Formation from '../models/Formation.js';
 import Niveau from '../models/Niveau.js';
+import Seance from '../models/Seance.js';
 import EleveFormation from '../models/EleveFormation.js';
 
 /**
@@ -59,6 +60,7 @@ export const getFormationById = async (req, res, next) => {
 
         // Get all levels for this formation
         const niveaux = await Niveau.find({ formation_id: formation._id })
+            .populate('seances')
             .sort({ numero: 1 });
 
         res.status(200).json({
@@ -97,13 +99,13 @@ export const createFormation = async (req, res, next) => {
             nom,
             description,
             responsable_id: responsable_id || req.user._id,
-            nombre_niveaux,
+            nombre_niveaux: 4, // Enforced
             duree_estimee,
         });
 
-        // Automatically create levels
+        // Automatically create 4 levels
         const levels = [];
-        for (let i = 1; i <= (nombre_niveaux || 4); i++) {
+        for (let i = 1; i <= 4; i++) {
             levels.push({
                 nom: `Niveau ${i}`,
                 numero: i,
@@ -112,7 +114,26 @@ export const createFormation = async (req, res, next) => {
             });
         }
 
-        await Niveau.insertMany(levels);
+        const createdLevels = await Niveau.insertMany(levels);
+
+        // Automatically create 6 sessions per level (Total 24)
+        const sessions = [];
+        for (const level of createdLevels) {
+            for (let j = 1; j <= 6; j++) {
+                sessions.push({
+                    nom: `Séance ${j}`,
+                    numero: j,
+                    niveau_id: level._id,
+                    date: new Date(), // Placeholder date
+                    heure_debut: '09:00', // Placeholder time
+                    heure_fin: '12:00', // Placeholder time
+                    formateur_id: formation.responsable_id,
+                    type: 'Presentiel'
+                });
+            }
+        }
+
+        await Seance.insertMany(sessions);
 
         res.status(201).json({
             success: true,

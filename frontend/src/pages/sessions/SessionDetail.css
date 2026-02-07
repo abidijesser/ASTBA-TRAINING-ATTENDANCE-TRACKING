@@ -45,6 +45,11 @@
     transform: scale(1.1);
 }
 
+.status-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
 .status-btn.present.active {
     background: var(--color-success);
     color: white;
@@ -67,4 +72,43 @@
     background: var(--color-info);
     color: white;
     border-color: var(--color-info);
+}
+
+.session-status-badges {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.level-badge {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.type-badge {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.status-badge {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge.terminee {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.finished-message {
+    color: var(--color-success);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
 }

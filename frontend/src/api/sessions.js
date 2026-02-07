@@ -54,6 +54,14 @@ export const sessionAPI = {
         });
         return response.data;
     },
+
+    /**
+     * Finish session
+     */
+    finish: async (id) => {
+        const response = await api.post(`/seances/${id}/finish`);
+        return response.data;
+    },
 };
 
 /**

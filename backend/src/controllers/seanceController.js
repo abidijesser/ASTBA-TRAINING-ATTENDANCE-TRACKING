@@ -99,19 +99,9 @@ export const createSeance = async (req, res, next) => {
             });
         }
 
-        // Access check for Formateurs
-        console.log('User Role:', req.user.role);
         if (req.user.role === 'formateur') {
-            console.log('User Assignments:', req.user.formations_assignees);
-            console.log('Target Formation ID:', formation._id.toString());
-
-            const hasAccess = req.user.formations_assignees?.some(
-                (id) => id.toString() === formation._id.toString()
-            );
-
-            console.log('Has Access:', hasAccess);
-
-            if (!hasAccess) {
+            const isAssigned = formation.responsable_id.toString() === req.user._id.toString();
+            if (!isAssigned) {
                 return res.status(403).json({
                     success: false,
                     message: "Accès refusé. Vous n'êtes pas assigné à cette formation.",
@@ -146,28 +136,6 @@ export const createSeance = async (req, res, next) => {
             formateur_id: formateur_id || req.user._id,
             contenu,
         });
-
-        // Auto-progression Logic
-        // Count sessions for this level
-        const sessionCount = await Seance.countDocuments({ niveau_id: req.params.niveauId });
-
-        // If 6 sessions reached, progress to next level
-        if (sessionCount >= 6) {
-            const formation = await Formation.findById(niveau.formation_id);
-
-            // Check if we verify against formation.niveau_actuel to avoid double increment
-            // But simpler: just increment if current level matches formation level
-            if (formation.niveau_actuel === niveau.numero) {
-                formation.niveau_actuel += 1;
-
-                // If completed all 4 levels (now at 5), mark inactive
-                if (formation.niveau_actuel > 4) {
-                    formation.actif = false;
-                }
-
-                await formation.save();
-            }
-        }
 
         res.status(201).json({
             success: true,
@@ -262,10 +230,27 @@ export const deleteSeance = async (req, res, next) => {
 export const getSeanceAttendance = async (req, res, next) => {
     try {
         // 1. Get the session to find its level/formation
-        const seance = await Seance.findById(req.params.id).populate('niveau_id');
+        const seance = await Seance.findById(req.params.id)
+            .populate({
+                path: 'niveau_id',
+                populate: { path: 'formation_id' }
+            });
 
         if (!seance) {
             return res.status(404).json({ success: false, message: 'Séance non trouvée' });
+        }
+
+        const formation = seance.niveau_id.formation_id;
+
+        // Access check for Formateurs
+        if (req.user.role === 'formateur') {
+            const isAssigned = formation.responsable_id.toString() === req.user._id.toString();
+            if (!isAssigned) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Accès refusé. Vous n'êtes pas assigné à cette formation.",
+                });
+            }
         }
 
         // 2. Get all students enrolled in the formation of this session
@@ -319,13 +304,118 @@ export const getAllSeances = async (req, res, next) => {
         }
 
         const seances = await Seance.find(query)
-            .populate('niveau_id', 'nom numero formation_id')
+            .populate({
+                path: 'niveau_id',
+                select: 'nom numero formation_id',
+                populate: {
+                    path: 'formation_id',
+                    select: 'nom niveau_actuel'
+                }
+            })
             .populate('formateur_id', 'nom prenom')
             .sort({ date: 1, heure_debut: 1 });
 
         res.status(200).json({
             success: true,
             data: { seances },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @route   POST /api/seances/:id/finish
+ * @desc    Mark session as finished and handle progression
+ * @access  Formateur+ (assigned to session)
+ */
+export const finishSeance = async (req, res, next) => {
+    try {
+        const seance = await Seance.findById(req.params.id).populate('niveau_id');
+        if (!seance) {
+            return res.status(404).json({ success: false, message: 'Séance non trouvée' });
+        }
+
+        const Formation = (await import('../models/Formation.js')).default;
+        const formation = await Formation.findById(seance.niveau_id.formation_id);
+
+        // Access Check
+        if (req.user.role === 'formateur') {
+            const isAssigned = formation.responsable_id.toString() === req.user._id.toString();
+            if (!isAssigned) {
+                return res.status(403).json({ success: false, message: "Accès refusé. Vous n'êtes pas assigné à cette formation." });
+            }
+        }
+
+        // 1. Verify all students have been marked
+        const EleveFormation = (await import('../models/EleveFormation.js')).default;
+        const Presence = (await import('../models/Presence.js')).default;
+
+        const enrolledStudents = await EleveFormation.find({
+            formation_id: formation._id,
+            statut: 'en_cours'
+        });
+
+        const studentIds = enrolledStudents.map(s => s.eleve_id.toString());
+        const presences = await Presence.find({
+            seance_id: seance._id,
+            eleve_id: { $in: studentIds }
+        });
+
+        if (presences.length < studentIds.length) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vous devez marquer la présence de tous les élèves inscrits avant de terminer la séance.'
+            });
+        }
+
+        // 2. Mark as Terminee
+        seance.statut = 'terminee';
+        await seance.save();
+
+        // 3. Level Progression Check
+        const totalSessionsInLevel = await Seance.countDocuments({ niveau_id: seance.niveau_id._id });
+        const finishedSessionsInLevel = await Seance.countDocuments({
+            niveau_id: seance.niveau_id._id,
+            statut: 'terminee'
+        });
+
+        let levelCompleted = false;
+        let formationCompleted = false;
+
+        // Requirement: All sessions must be finished AND there must be at least 6 sessions
+        if (finishedSessionsInLevel >= totalSessionsInLevel && finishedSessionsInLevel >= 6) {
+            levelCompleted = true;
+
+            // Increment niveau_actuel
+            if (formation.niveau_actuel === seance.niveau_id.numero) {
+                formation.niveau_actuel += 1;
+
+                if (formation.niveau_actuel > 4) {
+                    formation.actif = false;
+                    formationCompleted = true;
+
+                    // Trigger certification for all students
+                    const { checkAndValidateCertification } = await import('../utils/certificationHelper.js');
+                    for (const studentId of studentIds) {
+                        await checkAndValidateCertification(studentId, formation._id);
+                    }
+                }
+
+                await formation.save();
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: levelCompleted
+                ? (formationCompleted ? 'Formation complétée avec succès !' : `Niveau ${seance.niveau_id.numero} terminé ! Niveau suivant débloqué.`)
+                : 'Séance terminée avec succès',
+            data: {
+                levelCompleted,
+                formationCompleted,
+                nextLevel: formation.niveau_actuel
+            }
         });
     } catch (error) {
         next(error);

@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { sessionAPI, niveauAPI } from '../../api/sessions';
 import { formationAPI } from '../../api/formations';
 import { Button, Card, Modal, Input } from '../../components/ui';
+import { useAuth } from '../../context/AuthContext';
 import './SessionList.css';
 
 const SessionList = () => {
+    const { isResponsable } = useAuth();
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -22,8 +24,10 @@ const SessionList = () => {
 
     useEffect(() => {
         fetchSessions();
-        fetchFormations();
-    }, []);
+        if (isResponsable) {
+            fetchFormations();
+        }
+    }, [isResponsable]);
 
     const fetchSessions = async () => {
         try {
@@ -123,9 +127,11 @@ const SessionList = () => {
                     <h1>Séances</h1>
                     <p>Gérer le planning des cours</p>
                 </div>
-                <Button onClick={() => setShowCreateModal(true)}>
-                    Nouvelle Séance
-                </Button>
+                {isResponsable && (
+                    <Button onClick={() => setShowCreateModal(true)}>
+                        Nouvelle Séance
+                    </Button>
+                )}
             </div>
 
             {loading ? (
@@ -136,29 +142,48 @@ const SessionList = () => {
                 </Card>
             ) : (
                 <div className="sessions-grid">
-                    {sessions.map((session) => (
-                        <Card key={session._id} className="session-card">
-                            <div className="session-header">
-                                <h3>{session.nom || 'Séance sans nom'}</h3>
-                                <span className={`session-type ${session.type?.toLowerCase().replace(' ', '-')}`}>
-                                    {session.type}
-                                </span>
-                            </div>
-                            <div className="session-info">
-                                <p><strong>Date:</strong> {new Date(session.date).toLocaleDateString()}</p>
-                                <p><strong>Horaire:</strong> {session.heure_debut} - {session.heure_fin}</p>
-                                <p><strong>Niveau:</strong> {session.niveau_id?.nom} (N°{session.niveau_id?.numero})</p>
-                                <p><strong>Formateur:</strong> {session.formateur_id?.nom} {session.formateur_id?.prenom}</p>
-                            </div>
-                            <div className="session-actions">
-                                <Link to={`/sessions/${session._id}`}>
-                                    <Button size="small" variant="secondary" fullWidth>
-                                        Gérer présences
-                                    </Button>
-                                </Link>
-                            </div>
-                        </Card>
-                    ))}
+                    {sessions.map((session) => {
+                        const levelNum = session.niveau_id?.numero;
+                        const activeLevelNum = session.niveau_id?.formation_id?.niveau_actuel || 1;
+                        const isLocked = levelNum > activeLevelNum;
+                        const isFinished = session.statut === 'terminee';
+
+                        return (
+                            <Card key={session._id} className={`session-card ${isLocked ? 'locked' : ''} ${isFinished ? 'finished' : ''}`}>
+                                <div className="session-header">
+                                    <h3>{session.nom || 'Séance sans nom'}</h3>
+                                    <div className="session-badges">
+                                        <span className={`session-type ${session.type?.toLowerCase().replace(' ', '-')}`}>
+                                            {session.type}
+                                        </span>
+                                        <span className={`session-status-badge ${session.statut}`}>
+                                            {session.statut}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="session-info">
+                                    <p><strong>Formation:</strong> {session.niveau_id?.formation_id?.nom}</p>
+                                    <p><strong>Niveau:</strong> {session.niveau_id?.nom} (N°{levelNum})</p>
+                                    <p><strong>Date:</strong> {new Date(session.date).toLocaleDateString()}</p>
+                                    <p><strong>Horaire:</strong> {session.heure_debut} - {session.heure_fin}</p>
+                                    <p><strong>Formateur:</strong> {session.formateur_id?.nom} {session.formateur_id?.prenom}</p>
+                                </div>
+                                <div className="session-actions">
+                                    {isLocked ? (
+                                        <Button size="small" variant="secondary" fullWidth disabled>
+                                            🔒 Niveau bloqué
+                                        </Button>
+                                    ) : (
+                                        <Link to={`/sessions/${session._id}`} className="action-link">
+                                            <Button size="small" variant={isFinished ? "ghost" : "secondary"} fullWidth>
+                                                {isFinished ? "Consulter" : "Gérer présences"}
+                                            </Button>
+                                        </Link>
+                                    )}
+                                </div>
+                            </Card>
+                        );
+                    })}
                 </div>
             )}
 
