@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { sessionAPI } from '../../api/sessions';
+import { useAuth } from '../../context/AuthContext';
 import { Button, Card } from '../../components/ui';
 import './SessionDetail.css';
 
@@ -13,6 +14,8 @@ const SessionDetail = () => {
     const [attendanceMap, setAttendanceMap] = useState({});
     const [savingAttendance, setSavingAttendance] = useState(false);
     const [finishingSession, setFinishingSession] = useState(false);
+
+    const { user } = useAuth();
 
     useEffect(() => {
         fetchSessionData();
@@ -32,8 +35,10 @@ const SessionDetail = () => {
             // Initialize attendance map with status mapping
             const initialMap = {};
             attendanceRes.data.forEach(student => {
-                // Only two states in UI: Présent / Absent
-                const uiStatus = student.statut === 'present' ? 'Présent' : 'Absent';
+                // Set UI status based on existing record; leave empty if not marked
+                let uiStatus = '';
+                if (student.statut === 'present') uiStatus = 'Présent';
+                else if (student.statut === 'absent') uiStatus = 'Absent';
                 initialMap[student._id] = uiStatus;
             });
             setAttendanceMap(initialMap);
@@ -99,6 +104,7 @@ const SessionDetail = () => {
     if (!session) return <div className="empty-state">Séance non trouvée</div>;
 
     const isFinished = session.statut === 'terminee';
+    const canEditAttendance = user?.role === 'formateur';
 
     return (
         <div className="session-detail">
@@ -115,7 +121,7 @@ const SessionDetail = () => {
                     </div>
                 </div>
                 <div className="header-actions">
-                    {!isFinished && (
+                    {!isFinished && canEditAttendance && (
                         <>
                             <Button onClick={handleSaveAttendance} loading={savingAttendance} variant="secondary">
                                 Enregistrer les présences
@@ -168,15 +174,15 @@ const SessionDetail = () => {
                                                 <div className="status-buttons">
                                                     <button
                                                         className={`status-btn present ${attendanceMap[student._id] === 'Présent' ? 'active' : ''}`}
-                                                        onClick={() => !isFinished && handleAttendanceChange(student._id, 'Présent')}
-                                                        disabled={isFinished}
+                                                        onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'Présent')}
+                                                        disabled={isFinished || !canEditAttendance}
                                                     >
                                                         P
                                                     </button>
                                                     <button
                                                         className={`status-btn absent ${attendanceMap[student._id] === 'Absent' ? 'active' : ''}`}
-                                                        onClick={() => !isFinished && handleAttendanceChange(student._id, 'Absent')}
-                                                        disabled={isFinished}
+                                                        onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'Absent')}
+                                                        disabled={isFinished || !canEditAttendance}
                                                     >
                                                         A
                                                     </button>

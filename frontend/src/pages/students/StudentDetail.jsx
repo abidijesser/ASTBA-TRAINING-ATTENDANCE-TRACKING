@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { studentAPI } from '../../api/students';
 import { formationAPI } from '../../api/formations';
+import { attendanceAPI } from '../../api/attendance';
 import { Button, Card, Modal, Input } from '../../components/ui';
 import './StudentDetail.css';
 
@@ -18,6 +19,7 @@ const StudentDetail = () => {
     const [studentFormations, setStudentFormations] = useState([]);
     const [allFormations, setAllFormations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [attendanceStats, setAttendanceStats] = useState({});
 
     // Edit State
     const [showEditModal, setShowEditModal] = useState(false);
@@ -56,6 +58,24 @@ const StudentDetail = () => {
         try {
             const response = await studentAPI.getFormations(id);
             setStudentFormations(response.data.formations);
+            // Fetch attendance stats for each formation
+            const statsPromises = (response.data.formations || []).map(async (f) => {
+                const formationId = f.formation_id?._id || f.formation_id;
+                if (!formationId) return null;
+                try {
+                    const res = await attendanceAPI.getStudentFormationAttendance(formationId, id);
+                    return { formationId, stats: res.data.statistics };
+                } catch (e) {
+                    console.warn('Failed to fetch attendance stats', e);
+                    return { formationId, stats: null };
+                }
+            });
+            const results = await Promise.all(statsPromises);
+            const mapped = {};
+            results.filter(Boolean).forEach(({ formationId, stats }) => {
+                mapped[formationId] = stats;
+            });
+            setAttendanceStats(mapped);
         } catch (error) {
             console.error('Error fetching student formations:', error);
         }
@@ -195,11 +215,44 @@ const StudentDetail = () => {
                                     justifyContent: 'space-between',
                                     alignItems: 'center'
                                 }}>
-                                    <div>
+                                    <div style={{ flex: 1 }}>
                                         <h4 style={{ margin: 0 }}>{f.formation_id?.nom || 'Formation'}</h4>
                                         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                                             Niveau: {f.niveau_actuel} | Statut: {f.statut}
                                         </p>
+                                        {/* Progress bar and stats */}
+                                        {(() => {
+                                            const fid = f.formation_id?._id || f.formation_id;
+                                            const st = attendanceStats[fid];
+                                            if (!st) return null;
+                                            const pct = Math.min(100, Math.max(0, st.pourcentage_presence || 0));
+                                            const present = st.present || 0;
+                                            const absent = st.absent || 0;
+                                            const total = st.total_seances || 0;
+                                            return (
+                                                <div style={{ marginTop: '8px' }}>
+                                                    <div style={{
+                                                        width: '100%',
+                                                        height: '12px',
+                                                        background: 'var(--color-border)',
+                                                        borderRadius: '8px',
+                                                        overflow: 'hidden'
+                                                    }}>
+                                                        <div style={{
+                                                            width: `${pct}%`,
+                                                            height: '100%',
+                                                            background: 'var(--color-success)',
+                                                            transition: 'width 0.3s ease'
+                                                        }} />
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginTop: '6px' }}>
+                                                        <span>Progression: {pct}%</span>
+                                                        <span>Présences: {present}/{total}</span>
+                                                        <span>Absences: {absent}/{total}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                     <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                                         {new Date(f.date_inscription).toLocaleDateString()}

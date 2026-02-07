@@ -224,20 +224,20 @@ export const getStudentFormationAttendance = async (req, res, next) => {
             .sort('seance_id.date');
 
         // Calculate statistics
-        const total = presences.length;
-        const present = presences.filter((p) =>
-            ['present', 'retard'].includes(p.statut)
-        ).length;
+        const totalMarked = presences.length; // number of attendance records
+        const totalSeances = seances.length; // total sessions in the formation
+        const present = presences.filter((p) => ['present', 'retard'].includes(p.statut)).length;
         const absent = presences.filter((p) => p.statut === 'absent').length;
-        const pourcentage = total > 0 ? ((present / total) * 100).toFixed(2) : 0;
+        // Progress is based on presence count over ALL planned sessions
+        const pourcentage = totalSeances > 0 ? ((present / totalSeances) * 100).toFixed(2) : 0;
 
         res.status(200).json({
             success: true,
             data: {
                 presences,
                 statistics: {
-                    total_seances: seances.length,
-                    seances_marked: total,
+                    total_seances: totalSeances,
+                    seances_marked: totalMarked,
                     present,
                     absent,
                     pourcentage_presence: parseFloat(pourcentage),
