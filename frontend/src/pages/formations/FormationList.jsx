@@ -10,6 +10,7 @@ const FormationList = () => {
     const { user, isResponsable } = useAuth();
     const [formations, setFormations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [formateurs, setFormateurs] = useState([]);
     const [formData, setFormData] = useState({
@@ -24,6 +25,9 @@ const FormationList = () => {
 
     useEffect(() => {
         fetchFormations();
+    }, [search]);
+
+    useEffect(() => {
         if (isResponsable) {
             fetchFormateurs();
         }
@@ -32,13 +36,19 @@ const FormationList = () => {
     const fetchFormations = async () => {
         try {
             setLoading(true);
-            const response = await formationAPI.getAll();
+            const params = search ? { search } : {};
+            const response = await formationAPI.getAll(params);
             setFormations(response.data.formations);
         } catch (error) {
             console.error('Error fetching formations:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        fetchFormations();
     };
 
     const fetchFormateurs = async () => {
@@ -102,11 +112,24 @@ const FormationList = () => {
                     <p>{showAsTable ? 'Liste des formations vous étant assignées' : 'Gérer le catalogue des formations'}</p>
                 </div>
                 {isResponsable && (
-                    <Button onClick={() => setShowCreateModal(true)}>
-                        Nouvelle Formation
+                    <Button onClick={() => setShowCreateModal(true)} className="btn-new">
+                        + Nouvelle Formation
                     </Button>
                 )}
             </div>
+
+            <Card className="search-card">
+                <form onSubmit={handleSearch} className="search-form">
+                    <input
+                        type="text"
+                        placeholder="Rechercher une formation..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="search-input"
+                    />
+                    <Button type="submit">Rechercher</Button>
+                </form>
+            </Card>
 
             {loading ? (
                 <div className="loading-state">Chargement...</div>

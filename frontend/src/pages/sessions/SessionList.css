@@ -2,6 +2,63 @@
     max-width: var(--max-width);
 }
 
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-6);
+}
+
+.page-header h1 {
+    font-size: var(--text-3xl);
+    margin-bottom: var(--space-2);
+}
+
+.page-header p {
+    color: var(--color-text-secondary);
+}
+
+.btn-new {
+    background: linear-gradient(135deg, var(--color-primary) 0%, #2558d0 100%);
+    color: white;
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: var(--text-base);
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(65, 105, 225, 0.3);
+}
+
+.btn-new:hover {
+    background: linear-gradient(135deg, #2558d0 0%, #1a3ba8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
+}
+
+.search-card {
+    margin-bottom: var(--space-6);
+}
+
+.search-form {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.search-input {
+    flex: 1;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-base);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-lightest);
+}
+
 .session-badges {
     display: flex;
     gap: 0.5rem;
@@ -59,3 +116,32 @@
 }
 
 /* Reusing generic styles from other pages where possible */
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        gap: var(--space-4);
+        align-items: stretch;
+    }
+
+    .btn-new {
+        width: 100%;
+        text-align: center;
+    }
+
+    .search-form {
+        flex-direction: column;
+    }
+
+    .search-input {
+        width: 100%;
+    }
+
+    .sessions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .session-info {
+        font-size: var(--text-sm);
+    }
+}

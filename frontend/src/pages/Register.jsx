@@ -107,11 +107,8 @@ const Register = () => {
         <div className="login-container">
             <div className="login-box">
                 <div className="login-header">
-                    <div className="login-logo">
-                        <div className="logo-icon">AS</div>
-                    </div>
+                    
                     <h1 className="login-title">ASTBA</h1>
-                    <p className="login-subtitle">Créer un compte</p>
                 </div>
 
                 <Card>

@@ -7,15 +7,18 @@ const CertificationList = () => {
     const [certifications, setCertifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         fetchCertifications();
-    }, [filter]);
+    }, [filter, search]);
 
     const fetchCertifications = async () => {
         try {
             setLoading(true);
-            const params = filter !== 'all' ? { statut: filter } : {};
+            const params = {};
+            if (filter !== 'all') params.statut = filter;
+            if (search) params.search = search;
             const response = await certificationAPI.getAll(params);
             setCertifications(response.data.certifications);
         } catch (error) {
@@ -23,6 +26,11 @@ const CertificationList = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        fetchCertifications();
     };
 
     const handleDownload = async (id) => {
@@ -45,7 +53,20 @@ const CertificationList = () => {
                     <h1>Certifications</h1>
                     <p>Gérer les certificats délivrés aux élèves</p>
                 </div>
-                <div className="header-actions">
+            </div>
+
+            <Card className="search-card">
+                <div className="search-form-cert">
+                    <form onSubmit={handleSearch} className="search-form">
+                        <input
+                            type="text"
+                            placeholder="Rechercher par nom élève..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="search-input"
+                        />
+                        <Button type="submit">Rechercher</Button>
+                    </form>
                     <select
                         className="input"
                         value={filter}
@@ -57,7 +78,7 @@ const CertificationList = () => {
                         <option value="en_attente">En attente</option>
                     </select>
                 </div>
-            </div>
+            </Card>
 
             {loading ? (
                 <div className="loading-state">Chargement...</div>

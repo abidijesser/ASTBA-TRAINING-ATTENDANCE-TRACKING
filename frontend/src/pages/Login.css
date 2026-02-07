@@ -7,13 +7,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Updated to a professional background gradient */
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     padding: var(--space-4);
+    font-family: 'Roboto', sans-serif;
 }
 
 .login-box {
     width: 100%;
     max-width: 420px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: var(--space-6);
 }
 
 .login-header {
@@ -44,18 +50,20 @@
 .login-title {
     font-size: var(--text-4xl);
     font-weight: var(--font-bold);
-    color: white;
+    color: var(--color-primary);
     margin-bottom: var(--space-2);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .login-subtitle {
     font-size: var(--text-base);
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--color-secondary);
 }
 
 .login-form {
-    /* Form spacing handled by input components */
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
 }
 
 .login-error-banner {
@@ -74,15 +82,30 @@
     text-align: center;
     margin-top: var(--space-6);
     font-size: var(--text-sm);
-    color: white;
+    color: var(--color-primary);
 }
 
 .login-link {
-    color: white;
+    color: var(--color-primary);
     font-weight: var(--font-semibold);
     text-decoration: underline;
 }
 
 .login-link:hover {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--color-secondary);
+}
+
+/* Responsive Design for Tablets */
+@media (max-width: 768px) {
+    .login-box {
+        padding: var(--space-4);
+    }
+
+    .login-title {
+        font-size: var(--text-3xl);
+    }
+
+    .login-subtitle {
+        font-size: var(--text-sm);
+    }
 }

@@ -6,8 +6,8 @@ import { dashboardAPI } from '../api/dashboard';
 import './Dashboard.css';
 
 /**
- * Dashboard Page
- * Role-specific overview
+ * Dashboard Page - Professional Admin Dashboard
+ * Modern, clean, and responsive design
  */
 const Dashboard = () => {
     const { user } = useAuth();
@@ -18,6 +18,7 @@ const Dashboard = () => {
         certifications: 0
     });
     const [loading, setLoading] = useState(true);
+    const [selectedTab, setSelectedTab] = useState('overview');
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -36,106 +37,227 @@ const Dashboard = () => {
 
     return (
         <div className="dashboard">
-            <div className="dashboard-header">
-                <h1>Tableau de bord</h1>
-                <p>Bienvenue, {user?.prenom} !</p>
+            {/* Dashboard Header */}
+            <div className="dashboard-header-section">
+                <div className="header-top">
+                    <div className="header-content">
+                        <h1 className="page-title">Tableau de bord</h1>
+                        <p className="page-subtitle">Bienvenue, <span className="user-greeting">{user?.prenom}</span> 👋</p>
+                    </div>
+                </div>
             </div>
 
-            <div className="stats-grid">
-                <Card className="stat-card">
-                    <div className="stat-icon" style={{ background: 'var(--color-primary-lightest)', color: 'var(--color-primary)' }}>
-                        <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                        </svg>
-                    </div>
-                    <div className="stat-content">
-                        <div className="stat-label">Élèves inscrits</div>
-                        <div className="stat-value">{loading ? '...' : stats.students}</div>
-                    </div>
-                </Card>
+            {/* Main Content Grid */}
+            <div className="dashboard-grid">
+                {/* Left Column - Stats and Charts */}
+                <div className="dashboard-column-main">
+                    {/* Top Stats Cards */}
+                    <div className="stats-container">
+                        <div className="stat-card-wrapper">
+                            <Card className="stat-card stat-card-blue">
+                                <div className="stat-card-content">
+                                    <div className="stat-card-icon">
+                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        </svg>
+                                    </div>
+                                    <div className="stat-info">
+                                        <p className="stat-label">Élèves inscrits</p>
+                                        <div className="stat-value-row">
+                                            <span className="stat-value">{loading ? '...' : stats.students.toLocaleString()}</span>
+                                            <span className="stat-change positive">↑ 12.5%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
 
-                <Card className="stat-card">
-                    <div className="stat-icon" style={{ background: 'var(--color-success-light)', color: 'var(--color-success)' }}>
-                        <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z" />
-                        </svg>
-                    </div>
-                    <div className="stat-content">
-                        <div className="stat-label">Formations actives</div>
-                        <div className="stat-value">{loading ? '...' : stats.activeFormations}</div>
-                    </div>
-                </Card>
+                        <div className="stat-card-wrapper">
+                            <Card className="stat-card stat-card-green">
+                                <div className="stat-card-content">
+                                    <div className="stat-card-icon">
+                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M12 2v20M2 12h20"></path>
+                                        </svg>
+                                    </div>
+                                    <div className="stat-info">
+                                        <p className="stat-label">Formations actives</p>
+                                        <div className="stat-value-row">
+                                            <span className="stat-value">{loading ? '...' : stats.activeFormations.toLocaleString()}</span>
+                                            <span className="stat-change positive">↑ 8.2%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
 
-                <Card className="stat-card">
-                    <div className="stat-icon" style={{ background: 'var(--color-warning-light)', color: 'var(--color-warning)' }}>
-                        <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                        </svg>
-                    </div>
-                    <div className="stat-content">
-                        <div className="stat-label">Séances aujourd'hui</div>
-                        <div className="stat-value">{loading ? '...' : stats.sessionsToday}</div>
-                    </div>
-                </Card>
+                        <div className="stat-card-wrapper">
+                            <Card className="stat-card stat-card-orange">
+                                <div className="stat-card-content">
+                                    <div className="stat-card-icon">
+                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                    </div>
+                                    <div className="stat-info">
+                                        <p className="stat-label">Séances aujourd'hui</p>
+                                        <div className="stat-value-row">
+                                            <span className="stat-value">{loading ? '...' : stats.sessionsToday}</span>
+                                            <span className="stat-change negative">↓ 3.1%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
 
-                <Card className="stat-card">
-                    <div className="stat-icon" style={{ background: 'var(--color-info-light)', color: 'var(--color-info)' }}>
-                        <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
-                        </svg>
+                        <div className="stat-card-wrapper">
+                            <Card className="stat-card stat-card-navy">
+                                <div className="stat-card-content">
+                                    <div className="stat-card-icon">
+                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M12 2L15.09 8.26H22L17.55 12.5L19.64 18.74L12 14.49L4.36 18.74L6.45 12.5L2 8.26H8.91L12 2Z"></path>
+                                        </svg>
+                                    </div>
+                                    <div className="stat-info">
+                                        <p className="stat-label">Certifications</p>
+                                        <div className="stat-value-row">
+                                            <span className="stat-value">{loading ? '...' : stats.certifications}</span>
+                                            <span className="stat-change positive">↑ 5.4%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
                     </div>
-                    <div className="stat-content">
-                        <div className="stat-label">Certifications</div>
-                        <div className="stat-value">{loading ? '...' : stats.certifications}</div>
+
+                    {/* Charts Section */}
+                    <div className="charts-grid">
+                        <Card className="chart-card">
+                            <div className="card-header">
+                                <h3 className="card-title">Formations par mois</h3>
+                                <button className="card-menu-btn">⋯</button>
+                            </div>
+                            <div className="chart-placeholder">
+                                <div className="bar-chart">
+                                    <div className="bar" style={{height: '40%'}}></div>
+                                    <div className="bar" style={{height: '60%'}}></div>
+                                    <div className="bar" style={{height: '45%'}}></div>
+                                    <div className="bar" style={{height: '75%'}}></div>
+                                    <div className="bar" style={{height: '50%'}}></div>
+                                    <div className="bar" style={{height: '65%'}}></div>
+                                    <div className="bar" style={{height: '55%'}}></div>
+                                    <div className="bar" style={{height: '35%'}}></div>
+                                    <div className="bar" style={{height: '70%'}}></div>
+                                    <div className="bar" style={{height: '80%'}}></div>
+                                    <div className="bar" style={{height: '62%'}}></div>
+                                    <div className="bar" style={{height: '40%'}}></div>
+                                </div>
+                            </div>
+                        </Card>
                     </div>
-                </Card>
-            </div>
 
-            <div className="dashboard-content">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                    {/* Statistics Section */}
+                    <Card className="statistics-card">
+                        <div className="statistics-header">
+                            <h3 className="card-title">Statistiques</h3>
+                            <div className="stats-filter">
+                                <input type="text" placeholder="Rechercher..." className="filter-input" />
+                                <select className="date-select">
+                                    <option>Fév 1 - Fév 7</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="statistics-content">
+                            <p className="no-data">Aucune donnée disponible</p>
+                        </div>
+                    </Card>
+                </div>
 
-                    {/* Admin Actions */}
+                {/* Right Column - Target & Actions */}
+                <div className="dashboard-column-sidebar">
+                    {/* Monthly Target Card */}
+                    <Card className="target-card">
+                        <div className="target-header">
+                            <h3 className="card-title">Objectif mensuel</h3>
+                            <button className="card-menu-btn">⋯</button>
+                        </div>
+                        <div className="circular-progress">
+                            <svg viewBox="0 0 120 120" className="progress-circle">
+                                <circle cx="60" cy="60" r="54" className="progress-bg"></circle>
+                                <circle cx="60" cy="60" r="54" className="progress-fill" style={{strokeDashoffset: '85'}}></circle>
+                            </svg>
+                            <div className="progress-text">
+                                <span className="progress-value">75.55%</span>
+                                <span className="progress-increase">+10%</span>
+                            </div>
+                        </div>
+                        <p className="target-message">Vous avez dépassé votre objectif! Continuez votre bon travail.</p>
+                        <div className="target-stats">
+                            <div className="target-stat-item">
+                                <span className="target-stat-label">Objectif</span>
+                                <span className="target-stat-value">200K</span>
+                                <span className="target-stat-change">↓</span>
+                            </div>
+                            <div className="target-stat-item">
+                                <span className="target-stat-label">Revenus</span>
+                                <span className="target-stat-value">200K</span>
+                                <span className="target-stat-change">↑</span>
+                            </div>
+                            <div className="target-stat-item">
+                                <span className="target-stat-label">Aujourd'hui</span>
+                                <span className="target-stat-value">200K</span>
+                                <span className="target-stat-change">↑</span>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Quick Actions */}
                     {user?.role === 'admin' && (
-                        <Card>
-                            <h3>Administration</h3>
-                            <div className="action-buttons" style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap' }}>
-                                <Link to="/students" className="btn btn-primary btn-small">Gérer les Élèves</Link>
-                                <Link to="/formations" className="btn btn-primary btn-small">Gérer les Formations</Link>
-                                <Link to="/sessions" className="btn btn-primary btn-small">Gérer les Séances</Link>
+                        <Card className="actions-card">
+                            <h3 className="card-title">Administration</h3>
+                            <div className="action-links">
+                                <Link to="/students" className="action-link">
+                                    <span className="link-icon">👥</span>
+                                    <span>Gérer les Élèves</span>
+                                </Link>
+                                <Link to="/formations" className="action-link">
+                                    <span className="link-icon">📚</span>
+                                    <span>Gérer les Formations</span>
+                                </Link>
+                                <Link to="/sessions" className="action-link">
+                                    <span className="link-icon">📅</span>
+                                    <span>Gérer les Séances</span>
+                                </Link>
                             </div>
                         </Card>
                     )}
 
-                    {/* Responsable Actions */}
                     {user?.isResponsable && (
-                        <Card>
-                            <h3>Gestion Rapide</h3>
-                            <div className="action-buttons" style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap' }}>
-                                <Link to="/formations" className="btn btn-primary btn-small">Mes Formations</Link>
-                                <Link to="/students" className="btn btn-secondary btn-small">Mes Élèves</Link>
-                                <button className="btn btn-success btn-small">Nouvelle Formation</button>
-                            </div>
-                        </Card>
-                    )}
-
-                    {/* Formateur Actions */}
-                    {user?.role === 'formateur' && (
-                        <Card>
-                            <h3>Espace Formateur</h3>
-                            <div className="action-buttons" style={{ display: 'flex', gap: '10px', marginTop: '15px', flexWrap: 'wrap' }}>
-                                <Link to="/sessions" className="btn btn-primary btn-small">Mes Séances</Link>
-                                <Link to="/students" className="btn btn-secondary btn-small">Liste des Élèves</Link>
+                        <Card className="actions-card">
+                            <h3 className="card-title">Gestion Rapide</h3>
+                            <div className="action-links">
+                                <Link to="/formations" className="action-link">
+                                    <span className="link-icon">📚</span>
+                                    <span>Mes Formations</span>
+                                </Link>
+                                <Link to="/students" className="action-link">
+                                    <span className="link-icon">👥</span>
+                                    <span>Mes Élèves</span>
+                                </Link>
+                                <button className="action-link">
+                                    <span className="link-icon">➕</span>
+                                    <span>Nouvelle Formation</span>
+                                </button>
                             </div>
                         </Card>
                     )}
                 </div>
-
-                <Card>
-                    <h3>Activité récente</h3>
-                    <p style={{ color: 'var(--color-text-secondary)', marginTop: 'var(--space-4)' }}>
-                        Aucune activité récente
-                    </p>
-                </Card>
             </div>
         </div>
     );
