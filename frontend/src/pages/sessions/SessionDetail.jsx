@@ -29,6 +29,9 @@ const SessionDetail = () => {
     const gestureCooldownRef = useRef(0);
     const advanceTimerRef = useRef(null);
     const advancingRef = useRef(false);
+    const cameraStartRef = useRef(0);
+    const gestureIndicatorRef = useRef(null);
+    const [gestureIndicator, setGestureIndicator] = useState(null); // 'present' | 'absent' | null
 
     const { user } = useAuth();
     const { prefs, t, setPrefs } = usePreferences();
@@ -101,6 +104,10 @@ const SessionDetail = () => {
                     globalThis.speechSynthesis.cancel();
                     globalThis.speechSynthesis.speak(utter);
                 }
+                // Trigger sign clip for confirmation if sign mode is on
+                if (prefs.signLanguageMode) {
+                    try { globalThis.playSign?.('presenceRecorded'); } catch {}
+                }
             } catch {}
             fetchSessionData(); // Refresh data
         } catch (error) {
@@ -111,24 +118,7 @@ const SessionDetail = () => {
         }
     };
 
-    const markAllPresent = () => {
-        const updated = {};
-        students.forEach((s) => {
-            updated[s._id] = 'Présent';
-        });
-        setAttendanceMap(updated);
-        try {
-            if (prefs.voiceEnabled) {
-                const utter = new SpeechSynthesisUtterance(t('confirmPresenceAll'));
-                let langCode = 'fr-FR';
-                if (prefs.language === 'ar') langCode = 'ar';
-                else if (prefs.language === 'en') langCode = 'en-US';
-                utter.lang = langCode;
-                globalThis.speechSynthesis.cancel();
-                globalThis.speechSynthesis.speak(utter);
-            }
-        } catch {}
-    };
+    // Removed unused markAllPresent
 
     // Guided mode helpers
     const speakText = (text) => {
@@ -181,6 +171,12 @@ const SessionDetail = () => {
         if (!s) return;
         if (advancingRef.current) return; // already waiting to advance
         setAttendanceMap((prev) => ({ ...prev, [s._id]: statusLabel }));
+        // Show visual indicator briefly
+        try {
+            setGestureIndicator(statusLabel === 'Présent' ? 'present' : 'absent');
+            clearTimeout(gestureIndicatorRef.current);
+            gestureIndicatorRef.current = setTimeout(() => setGestureIndicator(null), 1000);
+        } catch {}
         advancingRef.current = true;
         // Block further gesture triggers during the wait window
         try {
@@ -196,6 +192,7 @@ const SessionDetail = () => {
     // Camera + gesture detection using MediaPipe Hands via CDN
     useEffect(() => {
         if (!cameraOn) return;
+        cameraStartRef.current = performance.now?.() || Date.now();
         let stream;
         const onResults = (results) => {
             const canvas = canvasRef.current;
@@ -217,6 +214,8 @@ const SessionDetail = () => {
                 }, 0);
 
                 const now = performance.now();
+                // Let camera stabilize ~1.5s before detecting
+                if (now - cameraStartRef.current < 1500) return;
                 if (now < gestureCooldownRef.current) return;
 
                 if (guidedMode) {
@@ -375,6 +374,28 @@ const SessionDetail = () => {
                         <div className="camera-box">
                             <video ref={videoRef} className="camera-video" playsInline muted />
                             <canvas ref={canvasRef} className="camera-canvas" />
+                            {gestureIndicator && (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        top: 12,
+                                        right: 12,
+                                        background: gestureIndicator === 'present' ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.9)',
+                                        color: '#fff',
+                                        borderRadius: 12,
+                                        padding: '8px 12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 8,
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    <span style={{ fontSize: 20 }}>
+                                        {gestureIndicator === 'present' ? '✊' : '🖐️'}
+                                    </span>
+                                    <span>{gestureIndicator === 'present' ? 'Présent' : 'Absent'}</span>
+                                </div>
+                            )}
                         </div>
                     )}
 

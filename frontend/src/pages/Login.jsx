@@ -68,8 +68,8 @@ const Login = () => {
 
         try {
             await login(formData);
-            // Show assistant right after login
-            setPrefs((p) => ({ ...p, assistantOnLogin: true, voiceEnabled: true }));
+            // Show assistant right after login and a short interpreter hint
+            setPrefs((p) => ({ ...p, assistantOnLogin: true, voiceEnabled: true, showInterpreterHint: true }));
             navigate('/dashboard');
         } catch (error) {
             setGeneralError(

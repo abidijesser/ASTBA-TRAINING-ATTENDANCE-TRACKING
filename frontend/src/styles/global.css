@@ -338,7 +338,13 @@ select {
 /* Assistant styles */
 .assistant-backdrop {
     position: fixed;
-    inset: 0;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    border: none;
     background: rgba(0,0,0,0.45);
     z-index: var(--z-modal);
     display: flex;
@@ -348,12 +354,14 @@ select {
 }
 
 .assistant-modal {
-    width: min(720px, 92vw);
+    width: min(640px, 92vw);
     background: var(--color-bg-primary);
     color: var(--color-text-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
-    padding: var(--space-6);
+    padding: var(--space-4);
+    max-height: 70vh;
+    overflow: auto;
 }
 
 .assistant-header {
@@ -418,6 +426,16 @@ select {
 .assistant-lang-buttons button.active {
     background: var(--color-primary);
     color: var(--color-text-white);
+}
+
+/* Interpreter hint animation */
+@keyframes float {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+    100% { transform: translateY(0); }
+}
+.interpreter-hint {
+    animation: float 1.8s ease-in-out infinite;
 }
 
 /* Guided attendance banner */

@@ -43,6 +43,9 @@ function AvatarAssistant() {
   const canvasRef = useRef(null);
   const handsRef = useRef(null);
   const rafRef = useRef(null);
+  const listenStartRef = useRef(0);
+  const okFramesRef = useRef(0);
+  const [detectedOK, setDetectedOK] = useState(false);
     // Open assistant when flag set after login, even if previously dismissed
     useEffect(() => {
       if (prefs.assistantOnLogin) {
@@ -72,16 +75,7 @@ function AvatarAssistant() {
     return 'https://upload.wikimedia.org/wikipedia/commons/4/46/Libras_-_Oi%2C_tudo_bem%3F.webm';
   }, [prefs.language]);
 
-  const options = useMemo(
-    () => [
-      { key: 'presenceQuickMode', label: t('presence'), action: () => setPrefs((p) => ({ ...p, presenceQuickMode: true })) },
-      { key: 'mobileMode', label: t('mobile'), action: () => setPrefs((p) => ({ ...p, mobileMode: true })) },
-      { key: 'accessibilityMode', label: t('accessibility'), action: () => setPrefs((p) => ({ ...p, accessibilityMode: true })) },
-      { key: 'language', label: t('language'), action: null },
-      { key: 'signLanguageMode', label: t('signLanguage'), action: () => setPrefs((p) => ({ ...p, signLanguageMode: true })) },
-    ],
-    [setPrefs, t]
-  );
+  // Legacy options removed in favor of profile buttons
 
   useEffect(() => {
     const onVoicesChanged = () => setVoicesReady(true);
@@ -122,6 +116,8 @@ function AvatarAssistant() {
   // Camera listening to confirm Deaf+Mute via OK gesture
   useEffect(() => {
     if (!open || !listenSign) return;
+    listenStartRef.current = performance.now?.() || Date.now();
+    okFramesRef.current = 0;
     let stream;
     const onResults = (results) => {
       const canvas = canvasRef.current;
@@ -138,14 +134,28 @@ function AvatarAssistant() {
         const indexTip = lm[8];
         const dx = (thumbTip.x - indexTip.x) * canvas.width;
         const dy = (thumbTip.y - indexTip.y) * canvas.height;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dist = Math.hypot(dx, dy);
+        const now = performance.now?.() || Date.now();
+        // Wait ~2s after camera starts to stabilize before detecting
+        if (now - listenStartRef.current < 2000) return;
         // OK gesture: thumb + index form a circle (small distance)
-        if (dist < Math.max(canvas.width, canvas.height) * 0.05) {
+        const threshold = Math.max(canvas.width, canvas.height) * 0.05;
+        if (dist < threshold) {
+          okFramesRef.current += 1;
+        } else {
+          okFramesRef.current = 0;
+        }
+        // Require ~10 consecutive frames to confirm (~0.3s at ~30fps)
+        if (okFramesRef.current >= 10) {
+          setDetectedOK(true);
           setListenSign(false);
-          setPrefs((p) => ({ ...p, signLanguageMode: true, voiceEnabled: false, assistantOnLogin: false }));
-          setOpen(false);
+          setPrefs((p) => ({ ...p, signLanguageMode: true, voiceEnabled: false, assistantOnLogin: false, autoStartGuided: true }));
           try { localStorage.setItem('assistantDismissed', '1'); } catch {}
-          navigate('/sessions');
+          // Show visual confirmation briefly before navigating
+          setTimeout(() => {
+            setOpen(false);
+            navigate('/sessions');
+          }, 800);
         }
       }
     };
@@ -241,21 +251,67 @@ function AvatarAssistant() {
         </div>
 
         <div className="assistant-signlang" style={{ marginTop: 8 }}>
-          <video controls width="100%" aria-label="Question en langue des signes" crossOrigin="anonymous">
-            poster="https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Ok_gesture.svg/640px-Ok_gesture.svg.png">
+          <video
+            controls
+            width="100%"
+            aria-label="Question en langue des signes"
+            crossOrigin="anonymous"
+            poster="https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Ok_gesture.svg/640px-Ok_gesture.svg.png"
+            playsInline
+            muted
+            autoPlay
+            loop
+            onError={(e) => {
+              // If the external demo fails, try a local loop clip shown by SignInterpreter
+                try { globalThis.playSignClip?.('/assets/sign-language/loop.webm'); } catch {}
+            }}
+          >
             <source src={videoByLang} type="video/webm" />
           </video>
-          <div className="assistant-language" style={{ marginTop: 8 }}>
+
           <div className="assistant-language" style={{ marginTop: 12 }}>
             <span>Répondez en signes: faites “OK” devant la caméra pour confirmer le profil Sourd+Muet.</span>
             <button className="assistant-btn" onClick={() => setListenSign(true)}>Activer écoute des signes</button>
           </div>
+
           {listenSign && (
-            <div className="camera-box" style={{ marginTop: 8 }}>
-              <video ref={videoRef} className="camera-video" playsInline muted />
-              <canvas ref={canvasRef} className="camera-canvas" />
+            <div className="camera-box" style={{ marginTop: 8, position: 'relative', width: '100%', height: 260 }}>
+              <video
+                ref={videoRef}
+                className="camera-video"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }}
+                playsInline
+                muted
+              />
+              <canvas
+                ref={canvasRef}
+                className="camera-canvas"
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: 12 }}
+              />
+              {detectedOK && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    background: 'rgba(16,185,129,0.9)',
+                    color: '#fff',
+                    borderRadius: 12,
+                    padding: '8px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    fontWeight: 600,
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>👌</span>
+                  <span>OK détecté</span>
+                </div>
+              )}
             </div>
           )}
+
+          <div className="assistant-language" style={{ marginTop: 8 }}>
             <button
               className="assistant-btn"
               onClick={() => {

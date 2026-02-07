@@ -5,6 +5,8 @@ import { PreferenceProvider, usePreferences } from './context/PreferenceContext'
 import DialogContainer from './components/DialogContainer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AvatarAssistant from './components/AvatarAssistant';
+import SignInterpreter from './components/SignInterpreter';
+import SignAvatar from './components/SignAvatar';
 
 // Pages
 import Login from './pages/Login';
@@ -69,6 +71,9 @@ function AppRoot() {
                 <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
                 <AvatarAssistant />
+                {/* Show avatar signer when sign mode on; keep video as fallback */}
+                <SignInterpreter />
+                <SignAvatar />
             </BrowserRouter>
         </div>
     );

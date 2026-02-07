@@ -11,6 +11,7 @@ const defaultPrefs = {
   voiceEnabled: false,
   assistantOnLogin: false,
   autoStartGuided: false,
+  showInterpreterHint: false,
 };
 
 function detectMobile() {
