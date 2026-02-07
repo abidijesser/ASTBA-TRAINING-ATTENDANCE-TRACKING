@@ -1,5 +1,25 @@
 // Minimal gloss/key → sequence mapper for the SignAvatar
-// This is a pragmatic placeholder. Expand with HamNoSys/SiGML later.
+// Expanded with normalization + phrase dictionary. Replace with HamNoSys/SiGML later.
+import dict from './dictionary.json';
+
+function normalize(text) {
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replaceAll(/\p{Diacritic}/gu, '')
+    .replaceAll(/[^a-z0-9\s']/g, ' ')
+    .replaceAll(/\s+/g, ' ')
+    .trim();
+}
+
+function longestPhraseMatch(tokens, start) {
+  for (let len = Math.min(6, tokens.length - start); len > 0; len--) {
+    const phrase = tokens.slice(start, start + len).join(' ');
+    const entry = dict[phrase];
+    if (entry) return { len, entry };
+  }
+  return null;
+}
 
 // Map high-level keys used across the app to avatar sequences
 export function keyToSequence(key) {
@@ -18,22 +38,26 @@ export function keyToSequence(key) {
 
 // Map free-form gloss text to a simple sequence
 export function glossToSequence(text) {
-  const t = String(text || '').toLowerCase();
-  // Basic keyword detection; extend with domain phrases as needed
-  if (!t.trim()) return { sequence: [] };
-
-  const seq = [];
-  // Prioritize explicit commands/keywords
-  if (t.includes('ok')) {
-    seq.push({ handshape: 'ok' });
-  } else if (t.includes('présent') || t.includes('present')) {
-    seq.push({ handshape: 'present' });
-  } else if (t.includes('absent')) {
-    seq.push({ handshape: 'absent' });
-  } else {
-    seq.push({ handshape: 'neutral' });
+  const norm = normalize(text);
+  if (!norm) return { sequence: [] };
+  const tokens = norm.split(' ');
+  const actions = [];
+  let i = 0;
+  while (i < tokens.length) {
+    const match = longestPhraseMatch(tokens, i);
+    if (match) {
+      actions.push(...(match.entry.actions || []));
+      i += match.len;
+    } else {
+      const w = tokens[i];
+      if (w.includes('ok')) actions.push({ handshape: 'ok' });
+      else if (w.includes('present')) actions.push({ handshape: 'present' });
+      else if (w.includes('absent')) actions.push({ handshape: 'absent' });
+      else actions.push({ handshape: 'neutral' });
+      i += 1;
+    }
   }
-  return { sequence: seq };
+  return { sequence: actions };
 }
 
 // Provide a suggestion for a free-form phrase

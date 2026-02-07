@@ -1,0 +1,10 @@
+{
+  "bonjour": { "actions": [{ "handshape": "neutral" }] },
+  "merci": { "actions": [{ "handshape": "neutral" }] },
+  "gerer le planning des cours": { "actions": [{ "handshape": "neutral" }] },
+  "prochain eleve": { "actions": [{ "handshape": "neutral" }] },
+  "presence enregistre": { "actions": [{ "handshape": "present" }] },
+  "marquer absent": { "actions": [{ "handshape": "absent" }] },
+  "confirmer profil": { "actions": [{ "handshape": "ok" }] },
+  "erreur": { "actions": [{ "handshape": "neutral" }] }
+}

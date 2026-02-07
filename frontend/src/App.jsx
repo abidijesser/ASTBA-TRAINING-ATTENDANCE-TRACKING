@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AvatarAssistant from './components/AvatarAssistant';
 import SignInterpreter from './components/SignInterpreter';
 import SignAvatar from './components/SignAvatar';
+import SignSelectionHelper from './components/SignSelectionHelper';
 
 // Pages
 import Login from './pages/Login';
@@ -74,6 +75,7 @@ function AppRoot() {
                 {/* Show avatar signer when sign mode on; keep video as fallback */}
                 <SignInterpreter />
                 <SignAvatar />
+                <SignSelectionHelper />
             </BrowserRouter>
         </div>
     );

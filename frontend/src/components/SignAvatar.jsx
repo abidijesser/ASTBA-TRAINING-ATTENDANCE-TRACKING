@@ -32,6 +32,7 @@ function SignAvatar() {
         const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
         camera.position.set(0, 1.3, 3.2);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.shadowMap.enabled = true;
         const mount = mountRef.current;
         if (!mount) return;
         renderer.setPixelRatio(globalThis.devicePixelRatio || 1);
@@ -47,45 +48,129 @@ function SignAvatar() {
         // Lights
         const key = new THREE.DirectionalLight(0xffffff, 1.2);
         key.position.set(2, 2, 2);
+        key.castShadow = true;
         scene.add(key);
         const fill = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(fill);
 
+        // Ground plane for soft shadows
+        const ground = new THREE.Mesh(
+          new THREE.PlaneGeometry(4, 2.5),
+          new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 1 })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.set(0, 0.6, 0);
+        ground.receiveShadow = true;
+        scene.add(ground);
+
         // Simple rig: torso + arms + hands
         const torso = new THREE.Mesh(
-          new THREE.BoxGeometry(0.6, 0.8, 0.3),
-          new THREE.MeshStandardMaterial({ color: 0x64748b }) // gray 500 for visibility
+          new THREE.BoxGeometry(0.7, 1, 0.32),
+          new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 })
         );
-        torso.position.set(0, 0.9, 0);
+        torso.position.set(0, 1, 0);
+        torso.castShadow = true;
         scene.add(torso);
 
-        const leftUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4, 16), new THREE.MeshStandardMaterial({ color: 0x60a5fa }));
-        leftUpper.position.set(-0.35, 1.2, 0);
-        leftUpper.rotation.z = Math.PI / 4;
-        scene.add(leftUpper);
+        // Head + neck
+        const neck = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.08, 0.08, 0.12, 16),
+          new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 })
+        );
+        neck.position.set(0, 1.46, 0);
+        neck.castShadow = true;
+        scene.add(neck);
 
-        const leftLower = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.35, 16), new THREE.MeshStandardMaterial({ color: 0x60a5fa }));
-        leftLower.position.set(-0.55, 0.95, 0);
-        leftLower.rotation.z = Math.PI / 3;
-        scene.add(leftLower);
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.18, 24, 24),
+          new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 })
+        );
+        head.position.set(0, 1.66, 0);
+        head.castShadow = true;
+        scene.add(head);
+        // Build articulated arms with shoulder + elbow pivots
+        const createArm = (side) => {
+          const group = new THREE.Group();
+          const shoulderX = side === 'left' ? -0.45 : 0.45;
+          group.position.set(shoulderX, 1.4, 0);
 
-        const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
-        leftHand.position.set(-0.75, 0.78, 0);
-        scene.add(leftHand);
+          const upper = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.08, 0.08, 0.42, 20),
+            new THREE.MeshStandardMaterial({ color: 0x60a5fa })
+          );
+          upper.castShadow = true;
+          upper.position.set(0, -0.21, 0);
+          upper.rotation.z = side === 'left' ? Math.PI / 8 : -Math.PI / 8; // slight outward
+          group.add(upper);
 
-        const rightUpper = leftUpper.clone();
-        rightUpper.position.set(0.35, 1.2, 0);
-        rightUpper.rotation.z = -Math.PI / 4;
-        scene.add(rightUpper);
-        const rightLower = leftLower.clone();
-        rightLower.position.set(0.55, 0.95, 0);
-        rightLower.rotation.z = -Math.PI / 3;
-        scene.add(rightLower);
-        const rightHand = leftHand.clone();
-        rightHand.position.set(0.75, 0.78, 0);
-        scene.add(rightHand);
+          const elbow = new THREE.Group();
+          elbow.position.set(0, -0.42, 0);
+          group.add(elbow);
 
-        rigRef.current = { leftHand, rightHand, leftLower, rightLower, leftUpper, rightUpper };
+          const lower = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.07, 0.07, 0.36, 20),
+            new THREE.MeshStandardMaterial({ color: 0x60a5fa })
+          );
+          lower.castShadow = true;
+          lower.position.set(0, -0.18, 0);
+          elbow.add(lower);
+
+          // Hand: palm + 5 fingers
+          const handGroup = new THREE.Group();
+          handGroup.position.set(0, -0.18, 0);
+          elbow.add(handGroup);
+
+          const palm = new THREE.Mesh(
+            new THREE.BoxGeometry(0.18, 0.12, 0.08),
+            new THREE.MeshStandardMaterial({ color: 0xf59e0b })
+          );
+          palm.castShadow = true;
+          handGroup.add(palm);
+
+          const fingers = [];
+          const fingerPositions = [-0.07, -0.035, 0, 0.035, 0.07];
+          const makeFinger = (x) => {
+            const base = new THREE.Group();
+            base.position.set(x, 0.06, 0.02);
+            handGroup.add(base);
+            const seg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.08, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
+            seg1.castShadow = true;
+            seg1.position.set(0, 0.04, 0);
+            base.add(seg1);
+            const seg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.06, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
+            seg2.castShadow = true;
+            seg2.position.set(0, 0.08, 0);
+            base.add(seg2);
+            return { base, seg1, seg2 };
+          };
+          fingerPositions.forEach((x) => fingers.push(makeFinger(x)));
+
+          // Thumb offset
+          fingers[0].base.position.set(fingerPositions[0], 0.02, -0.02);
+
+          // Neutral hand pose: slight curl
+          const setNeutralFingers = () => {
+            fingers.forEach((f, i) => {
+              f.base.rotation.x = -0.2 - i * 0.02;
+              f.seg1.rotation.x = -0.1;
+              f.seg2.rotation.x = -0.05;
+            });
+          };
+          setNeutralFingers();
+
+          // Neutral arm pose: slight forward
+          group.rotation.x = -0.2;
+          elbow.rotation.x = -0.1;
+          // expose hand group and fingers for posing
+          return { group, upper, elbow, lower, handGroup, fingers };
+        };
+
+        const leftArm = createArm('left');
+        const rightArm = createArm('right');
+        scene.add(leftArm.group);
+        scene.add(rightArm.group);
+
+        rigRef.current = { leftArm, rightArm };
         sceneRef.current = scene;
         camRef.current = camera;
         rendererRef.current = renderer;
@@ -126,44 +211,51 @@ function SignAvatar() {
     const rig = rigRef.current;
     const THREE = threeRef.current;
     if (!rig || !THREE) return;
-    // Simple animations via tween-ish steps
     const duration = 900;
     const start = performance.now();
 
-    const initial = {
-      l: rig.leftHand.position.clone(),
-      r: rig.rightHand.position.clone(),
+    // Capture initial rotations
+    const init = {
+      lGroupX: rig.leftArm.group.rotation.x,
+      lElbowX: rig.leftArm.elbow.rotation.x,
+      rGroupX: rig.rightArm.group.rotation.x,
+      rElbowX: rig.rightArm.elbow.rotation.x,
     };
 
-    const targetByName = {
-      ok: { // bring right hand near left to form ring
-        left: new THREE.Vector3(-0.62, 0.82, 0),
-        right: new THREE.Vector3(-0.58, 0.84, 0),
-      },
-      present: { // small fist front
-        left: new THREE.Vector3(-0.72, 0.8, 0.05),
-        right: new THREE.Vector3(0.78, 0.82, 0.05),
-      },
-      absent: { // open palm
-        left: new THREE.Vector3(-0.78, 0.78, -0.05),
-        right: new THREE.Vector3(0.82, 0.78, -0.05),
-      },
-      neutral: {
-        left: new THREE.Vector3(-0.75, 0.78, 0),
-        right: new THREE.Vector3(0.75, 0.78, 0),
-      },
+    // Target rotations per gesture
+    const targets = {
+      neutral: { lGroupX: -0.2, lElbowX: -0.1, rGroupX: -0.2, rElbowX: -0.1 },
+      present: { lGroupX: -0.4, lElbowX: -0.6, rGroupX: -0.4, rElbowX: -0.6 },
+      absent: { lGroupX: -0.1, lElbowX: 0.2, rGroupX: -0.1, rElbowX: 0.2 },
+      ok: { lGroupX: -0.3, lElbowX: -0.5, rGroupX: -0.3, rElbowX: -0.7 },
     };
-    const tgt = targetByName[name] || targetByName.neutral;
+    const tgt = targets[name] || targets.neutral;
 
     const step = () => {
       const t = Math.min(1, (performance.now() - start) / duration);
-      rig.leftHand.position.lerpVectors(initial.l, tgt.left, t);
-      rig.rightHand.position.lerpVectors(initial.r, tgt.right, t);
+      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut
+      rig.leftArm.group.rotation.x = init.lGroupX + (tgt.lGroupX - init.lGroupX) * ease;
+      rig.leftArm.elbow.rotation.x = init.lElbowX + (tgt.lElbowX - init.lElbowX) * ease;
+      rig.rightArm.group.rotation.x = init.rGroupX + (tgt.rGroupX - init.rGroupX) * ease;
+      rig.rightArm.elbow.rotation.x = init.rElbowX + (tgt.rElbowX - init.rElbowX) * ease;
+      // Finger poses
+      const poseHand = (arm, open) => {
+        arm.fingers.forEach((f, i) => {
+          const curl = open ? -0.05 : -0.6;
+          const curl2 = open ? -0.02 : -0.5;
+          f.seg1.rotation.x = curl;
+          f.seg2.rotation.x = curl2;
+        });
+        if (name === 'ok') {
+          // Thumb touches index finger
+          arm.fingers[1].base.rotation.x = -0.3;
+          arm.fingers[0].base.rotation.x = -0.3;
+        }
+      };
+      if (name === 'absent') { poseHand(rig.leftArm, true); poseHand(rig.rightArm, true); }
+      else if (name === 'present' || name === 'ok') { poseHand(rig.leftArm, false); poseHand(rig.rightArm, false); }
       if (t < 1) requestAnimationFrame(step);
-      else {
-        // return to neutral after a short hold
-        setTimeout(() => playGesture('neutral'), 500);
-      }
+      else setTimeout(() => playGesture('neutral'), 500);
     };
     step();
   };
