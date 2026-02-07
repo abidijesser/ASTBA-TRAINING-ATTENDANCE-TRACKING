@@ -81,21 +81,21 @@ const Login = () => {
     };
 
     return (
-        <div className="login-container">
+        <main className="login-container">
             <div className="login-box">
-                <div className="login-header">
-                    <div className="login-logo">
+                <header className="login-header">
+                    <div className="login-logo" aria-hidden="true">
                         <div className="logo-icon">AS</div>
                     </div>
                     <h1 className="login-title">ASTBA</h1>
-                    <p className="login-subtitle">Système de Gestion de Formationssssss</p>
-                </div>
+                    <p className="login-subtitle">Système de Gestion de Formations</p>
+                </header>
 
                 <Card>
-                    <form onSubmit={handleSubmit} className="login-form">
+                    <form onSubmit={handleSubmit} className="login-form" aria-label="Formulaire de connexion">
                         {generalError && (
-                            <div className="login-error-banner">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <div className="login-error-banner" role="alert" aria-live="assertive">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path
                                         fillRule="evenodd"
                                         d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -141,7 +141,7 @@ const Login = () => {
                     </Link>
                 </p>
             </div>
-        </div>
+        </main>
     );
 };
 

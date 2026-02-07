@@ -16,12 +16,14 @@ const Input = ({
     disabled = false,
     ...props
 }) => {
+    const errorId = error ? `${name}-error` : undefined;
+
     return (
         <div className="input-group">
             {label && (
                 <label htmlFor={name} className="input-label">
                     {label}
-                    {required && <span className="input-required">*</span>}
+                    {required && <span className="input-required" aria-label="required">*</span>}
                 </label>
             )}
             <input
@@ -32,10 +34,23 @@ const Input = ({
                 onChange={onChange}
                 placeholder={placeholder}
                 disabled={disabled}
+                required={required}
+                aria-required={required}
+                aria-invalid={!!error}
+                aria-describedby={errorId}
                 className={`input ${error ? 'input-error' : ''}`}
                 {...props}
             />
-            {error && <span className="input-error-message">{error}</span>}
+            {error && (
+                <span
+                    id={errorId}
+                    className="input-error-message"
+                    role="alert"
+                    aria-live="polite"
+                >
+                    {error}
+                </span>
+            )}
         </div>
     );
 };

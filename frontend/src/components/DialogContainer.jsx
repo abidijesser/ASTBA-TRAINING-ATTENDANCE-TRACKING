@@ -45,9 +45,14 @@ const Dialog = ({ dialog }) => {
     return (
         <>
             <div className="dialog-backdrop" />
-            <div className={`dialog ${getClassName(dialog.type)}`}>
+            <div
+                className={`dialog ${getClassName(dialog.type)}`}
+                role={dialog.type === 'error' ? 'alert' : dialog.type === 'confirm' ? 'alertdialog' : 'status'}
+                aria-live={dialog.type === 'success' ? 'polite' : dialog.type === 'error' ? 'assertive' : 'off'}
+                aria-atomic="true"
+            >
                 <div className="dialog-content">
-                    <div className={`dialog-icon dialog-icon-${dialog.type}`}>
+                    <div className={`dialog-icon dialog-icon-${dialog.type}`} aria-hidden="true">
                         {getIcon(dialog.type)}
                     </div>
                     <div className="dialog-body">
@@ -59,12 +64,14 @@ const Dialog = ({ dialog }) => {
                     {dialog.type === 'confirm' ? (
                         <>
                             <button
+                                type="button"
                                 className="dialog-btn dialog-btn-cancel"
                                 onClick={dialog.onCancel}
                             >
                                 Annuler
                             </button>
                             <button
+                                type="button"
                                 className="dialog-btn dialog-btn-confirm"
                                 onClick={dialog.onConfirm}
                             >
@@ -73,8 +80,10 @@ const Dialog = ({ dialog }) => {
                         </>
                     ) : (
                         <button
+                            type="button"
                             className="dialog-btn dialog-btn-close"
                             onClick={dialog.onConfirm}
+                            aria-label="Fermer le message"
                         >
                             OK
                         </button>
