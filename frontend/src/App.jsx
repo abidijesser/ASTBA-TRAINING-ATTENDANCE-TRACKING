@@ -67,9 +67,9 @@ function AppRoot() {
 
                 {/* Catch all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                </Routes>
+                <AvatarAssistant />
             </BrowserRouter>
-            <AvatarAssistant />
         </div>
     );
 }

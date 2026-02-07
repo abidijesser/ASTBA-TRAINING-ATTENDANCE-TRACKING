@@ -9,6 +9,8 @@ const defaultPrefs = {
   language: 'fr',
   signLanguageMode: false,
   voiceEnabled: false,
+  assistantOnLogin: false,
+  autoStartGuided: false,
 };
 
 function detectMobile() {
@@ -37,8 +39,8 @@ export function PreferenceProvider({ children }) {
   const dictionary = useMemo(
     () => ({
       fr: {
-        welcome: "Bienvenue ! Pour mieux vous aider, choisissez un mode.",
-        ask: "Souhaitez-vous un mode simplifié, mobile, accessibilité ou multilingue ?",
+        welcome: "Bienvenue ! Pour mieux vous aider, choisissez votre profil.",
+        ask: "Sélectionnez le type de besoin : Sourd, Muet, ou Malvoyant.",
         presence: "Présences intelligentes",
         mobile: "Mode mobile",
         accessibility: "Accessibilité renforcée",
@@ -48,8 +50,8 @@ export function PreferenceProvider({ children }) {
         presenceRecorded: "Présence enregistrée",
       },
       ar: {
-        welcome: "مرحبًا! لمساعدتك بشكل أفضل، اختر وضعًا.",
-        ask: "هل تريد وضع مبسط، المحمول، إمكانية الوصول أو متعدد اللغات؟",
+        welcome: "مرحبًا! لمساعدتك بشكل أفضل، اختر نوع الاحتياج.",
+        ask: "اختر: صمم (أصم)، أبكم، أو ضعيف البصر.",
         presence: "حضور ذكي",
         mobile: "وضع المحمول",
         accessibility: "وضع إمكانية الوصول",
@@ -59,8 +61,8 @@ export function PreferenceProvider({ children }) {
         presenceRecorded: "تم تسجيل الحضور",
       },
       en: {
-        welcome: "Welcome! To help you best, pick a mode.",
-        ask: "Do you want simplified, mobile, accessibility or multilingual?",
+        welcome: "Welcome! To help you best, choose your profile.",
+        ask: "Select your need: Deaf, Non‑verbal, or Low‑vision.",
         presence: "Smart Attendance",
         mobile: "Mobile Mode",
         accessibility: "Accessibility Mode",

@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePreferences } from '../context/PreferenceContext';
+import { useNavigate } from 'react-router-dom';
 
 function pickVoice(langCode) {
   try {
-    const voices = speechSynthesis.getVoices?.() || [];
-    const target = langCode === 'ar' ? 'ar' : langCode === 'en' ? 'en' : 'fr';
+    const voices = globalThis.speechSynthesis.getVoices?.() || [];
+    let target = 'fr';
+    if (langCode === 'ar') target = 'ar';
+    else if (langCode === 'en') target = 'en';
     // Prefer exact language match, then locale startsWith
     const exact = voices.find((v) => v.lang?.toLowerCase() === target);
     if (exact) return exact;
@@ -19,18 +22,55 @@ function speak(text, lang) {
   try {
     const voice = pickVoice(lang);
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang === 'ar' ? 'ar' : lang === 'en' ? 'en-US' : 'fr-FR';
+    let langCode = 'fr-FR';
+    if (lang === 'ar') langCode = 'ar';
+    else if (lang === 'en') langCode = 'en-US';
+    utter.lang = langCode;
     if (voice) utter.voice = voice;
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utter);
+    globalThis.speechSynthesis.cancel();
+    globalThis.speechSynthesis.speak(utter);
   } catch {}
 }
 
 function AvatarAssistant() {
   const { prefs, setPrefs, t } = usePreferences();
-  const [open, setOpen] = useState(() => !localStorage.getItem('assistantDismissed'));
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
   const [caption, setCaption] = useState('');
   const [voicesReady, setVoicesReady] = useState(false);
+  const [listenSign, setListenSign] = useState(false);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const handsRef = useRef(null);
+  const rafRef = useRef(null);
+    // Open assistant when flag set after login, even if previously dismissed
+    useEffect(() => {
+      if (prefs.assistantOnLogin) {
+        setOpen(true);
+        setPrefs((p) => ({ ...p, assistantOnLogin: false }));
+      }
+    }, [prefs.assistantOnLogin, setPrefs]);
+
+    // Show on first visit if not dismissed
+    useEffect(() => {
+      try {
+        if (!localStorage.getItem('assistantDismissed')) {
+          setOpen(true);
+        }
+      } catch {}
+    }, []);
+  // Interpreter video per language (instead of camera listening in assistant)
+  const videoByLang = useMemo(() => {
+    // External placeholder demo clips with a person signing
+    // Replace with your LSF/ASL/Arabic SL interpreter videos later
+    if (prefs.language === 'ar') {
+      return 'https://upload.wikimedia.org/wikipedia/commons/b/bf/Arab_sign_language_demo.webm';
+    }
+    if (prefs.language === 'en') {
+      return 'https://upload.wikimedia.org/wikipedia/commons/5/57/ASL_Hello_sign.webm';
+    }
+    return 'https://upload.wikimedia.org/wikipedia/commons/4/46/Libras_-_Oi%2C_tudo_bem%3F.webm';
+  }, [prefs.language]);
 
   const options = useMemo(
     () => [
@@ -45,13 +85,13 @@ function AvatarAssistant() {
 
   useEffect(() => {
     const onVoicesChanged = () => setVoicesReady(true);
-    if ('speechSynthesis' in window) {
-      const list = speechSynthesis.getVoices();
+    if ('speechSynthesis' in globalThis) {
+      const list = globalThis.speechSynthesis.getVoices();
       setVoicesReady(list && list.length > 0);
-      window.speechSynthesis.addEventListener?.('voiceschanged', onVoicesChanged);
+      globalThis.speechSynthesis.addEventListener?.('voiceschanged', onVoicesChanged);
     }
     return () => {
-      window.speechSynthesis?.removeEventListener?.('voiceschanged', onVoicesChanged);
+      globalThis.speechSynthesis?.removeEventListener?.('voiceschanged', onVoicesChanged);
     };
   }, []);
 
@@ -79,10 +119,78 @@ function AvatarAssistant() {
     speak(message, prefs.language);
   };
 
+  // Camera listening to confirm Deaf+Mute via OK gesture
+  useEffect(() => {
+    if (!open || !listenSign) return;
+    let stream;
+    const onResults = (results) => {
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!ctx || !videoRef.current) return;
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const lm = results.multiHandLandmarks?.[0];
+      if (lm) {
+        ctx.fillStyle = '#3B82F6';
+        lm.forEach((p) => ctx.fillRect(p.x * canvas.width, p.y * canvas.height, 4, 4));
+        const thumbTip = lm[4];
+        const indexTip = lm[8];
+        const dx = (thumbTip.x - indexTip.x) * canvas.width;
+        const dy = (thumbTip.y - indexTip.y) * canvas.height;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        // OK gesture: thumb + index form a circle (small distance)
+        if (dist < Math.max(canvas.width, canvas.height) * 0.05) {
+          setListenSign(false);
+          setPrefs((p) => ({ ...p, signLanguageMode: true, voiceEnabled: false, assistantOnLogin: false }));
+          setOpen(false);
+          try { localStorage.setItem('assistantDismissed', '1'); } catch {}
+          navigate('/sessions');
+        }
+      }
+    };
+    const load = async () => {
+      try {
+        if (!globalThis.Hands) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.body.appendChild(script);
+          });
+        }
+        const hands = new globalThis.Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.7, minTrackingConfidence: 0.6 });
+        hands.onResults(onResults);
+        handsRef.current = hands;
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        const tick = async () => {
+          if (!videoRef.current || !handsRef.current) return;
+          await handsRef.current.send({ image: videoRef.current });
+          rafRef.current = requestAnimationFrame(tick);
+        };
+        tick();
+      } catch (e) {
+        console.error('Assistant camera error', e);
+      }
+    };
+    load();
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      try { handsRef.current?.close(); } catch {}
+      try { stream?.getTracks()?.forEach((t) => t.stop()); } catch {}
+    };
+  }, [open, listenSign, setPrefs, navigate]);
+
   if (!open) return null;
 
   return (
-    <div className="assistant-backdrop" role="dialog" aria-modal="true">
+    <dialog className="assistant-backdrop" open>
       <div className="assistant-modal">
         <div className="assistant-header">
           <div className="assistant-avatar" aria-hidden="true">🧑‍🏫</div>
@@ -98,20 +206,25 @@ function AvatarAssistant() {
           </div>
         )}
 
+        {/* Profile selection: Deaf+Mute (combined), Low-vision */}
         <div className="assistant-grid">
-          {options.map((opt) => (
-            <button
-              key={opt.key}
-              className="assistant-btn"
-              onClick={() => {
-                if (opt.key === 'language') return; // handled below
-                opt.action?.();
-                onClose();
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
+          <button
+            className="assistant-btn"
+            onClick={() => {
+              setListenSign(true);
+            }}
+          >
+            Sourd + Muet (confirmer en signes)
+          </button>
+          <button
+            className="assistant-btn"
+            onClick={() => {
+              setPrefs((p) => ({ ...p, accessibilityMode: true, voiceEnabled: true }));
+              onClose();
+            }}
+          >
+            Malvoyant
+          </button>
         </div>
 
         <div className="assistant-language">
@@ -123,16 +236,41 @@ function AvatarAssistant() {
           </div>
         </div>
 
-        {prefs.signLanguageMode && (
-          <div className="assistant-signlang">
-            {/* Placeholder: integrate short sign-language videos or 3D avatar */}
-            <video controls width="100%" aria-label="Message en langue des signes">
-              <source src="/assets/sign-language/welcome.mp4" type="video/mp4" />
-            </video>
+        <div className="assistant-language" style={{ marginTop: 12 }}>
+          <span>Interprète en langue des signes (aperçu vidéo).</span>
+        </div>
+
+        <div className="assistant-signlang" style={{ marginTop: 8 }}>
+          <video controls width="100%" aria-label="Question en langue des signes" crossOrigin="anonymous">
+            poster="https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Ok_gesture.svg/640px-Ok_gesture.svg.png">
+            <source src={videoByLang} type="video/webm" />
+          </video>
+          <div className="assistant-language" style={{ marginTop: 8 }}>
+          <div className="assistant-language" style={{ marginTop: 12 }}>
+            <span>Répondez en signes: faites “OK” devant la caméra pour confirmer le profil Sourd+Muet.</span>
+            <button className="assistant-btn" onClick={() => setListenSign(true)}>Activer écoute des signes</button>
           </div>
-        )}
+          {listenSign && (
+            <div className="camera-box" style={{ marginTop: 8 }}>
+              <video ref={videoRef} className="camera-video" playsInline muted />
+              <canvas ref={canvasRef} className="camera-canvas" />
+            </div>
+          )}
+            <button
+              className="assistant-btn"
+              onClick={() => {
+                setPrefs((p) => ({ ...p, signLanguageMode: true, voiceEnabled: true, assistantOnLogin: false, autoStartGuided: true }));
+                try { localStorage.setItem('assistantDismissed', '1'); } catch {}
+                setOpen(false);
+                navigate('/sessions');
+              }}
+            >
+              Activer mode signes pour la présence
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </dialog>
   );
 }
 

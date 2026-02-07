@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { usePreferences } from '../context/PreferenceContext';
 import { Button, Input, Card } from '../components/ui';
 import './Login.css';
 
@@ -12,6 +13,7 @@ import './Login.css';
 const Login = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
+    const { setPrefs } = usePreferences();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -66,6 +68,8 @@ const Login = () => {
 
         try {
             await login(formData);
+            // Show assistant right after login
+            setPrefs((p) => ({ ...p, assistantOnLogin: true, voiceEnabled: true }));
             navigate('/dashboard');
         } catch (error) {
             setGeneralError(

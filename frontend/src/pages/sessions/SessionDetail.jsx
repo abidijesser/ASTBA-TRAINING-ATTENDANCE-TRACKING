@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { sessionAPI } from '../../api/sessions';
 import { usePreferences } from '../../context/PreferenceContext';
 import { useAuth } from '../../context/AuthContext';
@@ -10,7 +10,7 @@ import './SessionDetail.css';
 const SessionDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { showAlert, showConfirm, showError, showSuccess } = useDialog();
+    const { showConfirm, showError, showSuccess } = useDialog();
     const [session, setSession] = useState(null);
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -94,9 +94,12 @@ const SessionDetail = () => {
             try {
                 if (prefs.voiceEnabled) {
                     const utter = new SpeechSynthesisUtterance(t('presenceRecorded'));
-                    utter.lang = prefs.language === 'ar' ? 'ar' : prefs.language === 'en' ? 'en-US' : 'fr-FR';
-                    speechSynthesis.cancel();
-                    speechSynthesis.speak(utter);
+                    let langCode = 'fr-FR';
+                    if (prefs.language === 'ar') langCode = 'ar';
+                    else if (prefs.language === 'en') langCode = 'en-US';
+                    utter.lang = langCode;
+                    globalThis.speechSynthesis.cancel();
+                    globalThis.speechSynthesis.speak(utter);
                 }
             } catch {}
             fetchSessionData(); // Refresh data
@@ -117,9 +120,12 @@ const SessionDetail = () => {
         try {
             if (prefs.voiceEnabled) {
                 const utter = new SpeechSynthesisUtterance(t('confirmPresenceAll'));
-                utter.lang = prefs.language === 'ar' ? 'ar' : prefs.language === 'en' ? 'en-US' : 'fr-FR';
-                speechSynthesis.cancel();
-                speechSynthesis.speak(utter);
+                let langCode = 'fr-FR';
+                if (prefs.language === 'ar') langCode = 'ar';
+                else if (prefs.language === 'en') langCode = 'en-US';
+                utter.lang = langCode;
+                globalThis.speechSynthesis.cancel();
+                globalThis.speechSynthesis.speak(utter);
             }
         } catch {}
     };
@@ -129,9 +135,12 @@ const SessionDetail = () => {
         try {
             if (!prefs.voiceEnabled) return;
             const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = prefs.language === 'ar' ? 'ar' : prefs.language === 'en' ? 'en-US' : 'fr-FR';
-            speechSynthesis.cancel();
-            speechSynthesis.speak(utter);
+            let langCode = 'fr-FR';
+            if (prefs.language === 'ar') langCode = 'ar';
+            else if (prefs.language === 'en') langCode = 'en-US';
+            utter.lang = langCode;
+            globalThis.speechSynthesis.cancel();
+            globalThis.speechSynthesis.speak(utter);
         } catch {}
     };
 
@@ -145,13 +154,7 @@ const SessionDetail = () => {
         if (s) speakText(`${s.nom} ${s.prenom}`);
     };
 
-    const toggleVoice = () => {
-        setPrefs((p) => ({ ...p, voiceEnabled: !p.voiceEnabled }));
-        // If enabling during guided mode, re-read current name
-        if (!prefs.voiceEnabled && guidedMode && students[currentIndex]) {
-            speakText(`${students[currentIndex].nom} ${students[currentIndex].prenom}`);
-        }
-    };
+    // Removed unused toggleVoice handler
 
     const advanceStudent = () => {
         const next = currentIndexRef.current + 1;
@@ -230,7 +233,7 @@ const SessionDetail = () => {
         };
         const load = async () => {
             try {
-                if (!window.Hands) {
+                if (!globalThis.Hands) {
                     await new Promise((resolve, reject) => {
                         const script = document.createElement('script');
                         script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
@@ -239,7 +242,7 @@ const SessionDetail = () => {
                         document.body.appendChild(script);
                     });
                 }
-                const hands = new window.Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+                const hands = new globalThis.Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
                 hands.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: 0.7, minTrackingConfidence: 0.6 });
                 hands.onResults(onResults);
                 handsRef.current = hands;
@@ -258,11 +261,9 @@ const SessionDetail = () => {
                 process();
             } catch (e) {
                 console.error('Camera/Hands error', e);
-                const msg = e?.name === 'NotAllowedError'
-                    ? 'Autorisez la caméra dans le navigateur (blocage permissions).'
-                    : e?.name === 'NotFoundError'
-                    ? 'Aucune caméra détectée sur l’appareil.'
-                    : 'La caméra ou le modèle de main est indisponible.';
+                let msg = 'La caméra ou le modèle de main est indisponible.';
+                if (e?.name === 'NotAllowedError') msg = 'Autorisez la caméra dans le navigateur (blocage permissions).';
+                else if (e?.name === 'NotFoundError') msg = 'Aucune caméra détectée sur l’appareil.';
                 showError(msg);
                 setCameraOn(false);
             }
@@ -271,7 +272,7 @@ const SessionDetail = () => {
         return () => {
             cancelAnimationFrame(rafRef.current);
             try { handsRef.current?.close(); } catch {}
-            try { stream && stream.getTracks().forEach((t) => t.stop()); } catch {}
+            try { stream?.getTracks()?.forEach((t) => t.stop()); } catch {}
             try { advanceTimerRef.current && clearTimeout(advanceTimerRef.current); } catch {}
         };
     }, [cameraOn, guidedMode]);
@@ -292,6 +293,21 @@ const SessionDetail = () => {
             setFinishingSession(false);
         }
     };
+
+    // Auto-start guided mode when pref flag set (from assistant CTA)
+    useEffect(() => {
+        if (
+            prefs.autoStartGuided &&
+            !guidedMode &&
+            session &&
+            session.statut !== 'terminee' &&
+            user?.role === 'formateur' &&
+            students && students.length > 0
+        ) {
+            startGuidedMode();
+            setPrefs((p) => ({ ...p, autoStartGuided: false }));
+        }
+    }, [prefs.autoStartGuided, guidedMode, session, students, user, setPrefs]);
 
     if (loading) return <div className="loading-state">Chargement...</div>;
     if (!session) return <div className="empty-state">Séance non trouvée</div>;
