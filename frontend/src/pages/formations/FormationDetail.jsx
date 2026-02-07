@@ -228,10 +228,20 @@ const FormationDetail = () => {
                     <h3>Informations Générales</h3>
                     <p>{formation.description}</p>
                     <div className="info-row">
-                        <div><strong>Durée:</strong> {formation.duree_mois} mois</div>
-                        <div><strong>Début:</strong> {new Date(formation.date_debut).toLocaleDateString()}</div>
+                        <div>
+                            <strong>Durée:</strong>{' '}
+                            {Number.isFinite(parseInt(formation.duree_estimee))
+                                ? `${parseInt(formation.duree_estimee)} mois`
+                                : (formation.duree_estimee || '--')}
+                        </div>
+                        <div>
+                            <strong>Début:</strong>{' '}
+                            {formation.date_debut
+                                ? new Date(formation.date_debut).toLocaleDateString()
+                                : '--'}
+                        </div>
                         <div><strong>Niveau Actuel:</strong> {formation.niveau_actuel ? `Niveau ${formation.niveau_actuel}` : 'N/A'}</div>
-                        <div><strong>Niveau requis:</strong> {formation.niveau_requis}</div>
+                        <div><strong>Niveau requis:</strong> {formation.niveau_requis || '--'}</div>
                         <div>
                             <strong>Responsable:</strong> {formation.responsable_id?.nom} {formation.responsable_id?.prenom}
                             {isResponsable && (
@@ -241,6 +251,44 @@ const FormationDetail = () => {
                             )}
                         </div>
                     </div>
+                </Card>
+
+                <Card className="media-card">
+                    <div className="card-header">
+                        <h3>Médias</h3>
+                    </div>
+                    {(!formation.medias || formation.medias.length === 0) ? (
+                        <p className="text-muted">Aucun média associé à cette formation.</p>
+                    ) : (
+                        <div className="media-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+                            {formation.medias.map((m) => {
+                                const makeMediaUrl = (media) => {
+                                    let url = media.url || '';
+                                    if (media.type === 'pdf' && url.includes('/image/upload/')) {
+                                        url = url.replace('/image/upload/', '/raw/upload/');
+                                    }
+                                    return url;
+                                };
+
+                                return (
+                                    <div key={m.publicId || m.url} className="media-item" style={{ border: '1px solid #eee', borderRadius: '8px', padding: '8px' }}>
+                                        {m.type === 'image' ? (
+                                            <a href={m.url} target="_blank" rel="noreferrer" title="Voir">
+                                                <img src={m.url} alt={m.title || 'image'} style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '6px' }} />
+                                            </a>
+                                        ) : m.type === 'video' ? (
+                                            <video src={m.url} controls style={{ width: '100%', height: '200px', borderRadius: '6px' }} />
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                <span style={{ fontSize: '12px' }}>{(m.type || 'pdf').toUpperCase()}</span>
+                                                <a href={makeMediaUrl(m)} target="_blank" rel="noreferrer" className="btn btn-secondary btn-small">Ouvrir</a>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </Card>
 
                 <Card className="levels-card">

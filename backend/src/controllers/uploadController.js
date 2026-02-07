@@ -56,8 +56,17 @@ export const deleteFile = async (req, res, next) => {
         // Cloudinary public_id has slashes, so we need to decode it
         const decodedPublicId = decodeURIComponent(publicId);
 
-        // Delete from Cloudinary
-        const result = await deleteFromCloudinary(decodedPublicId);
+        // Try deleting as image first, then as raw (for PDFs)
+        let result = await deleteFromCloudinary(decodedPublicId);
+        if (result.result !== 'ok') {
+            // Attempt raw deletion for non-image assets like PDFs
+            try {
+                const cloudinary = (await import('../config/cloudinary.js')).default;
+                result = await cloudinary.uploader.destroy(decodedPublicId, { resource_type: 'raw' });
+            } catch (e) {
+                // noop; will fall through
+            }
+        }
 
         if (result.result !== 'ok') {
             return res.status(404).json({

@@ -42,6 +42,15 @@ const formationSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        medias: [
+            {
+                url: { type: String, required: true },
+                publicId: { type: String, required: true },
+                type: { type: String, enum: ['image', 'video', 'pdf', 'raw'], default: 'image' },
+                format: { type: String },
+                title: { type: String, trim: true },
+            },
+        ],
         niveau_actuel: {
             type: Number,
             default: 1,
