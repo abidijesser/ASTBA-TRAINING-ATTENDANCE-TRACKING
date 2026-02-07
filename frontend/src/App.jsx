@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { DialogProvider } from './context/DialogContext';
+import DialogContainer from './components/DialogContainer';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
@@ -19,9 +21,11 @@ import Layout from './components/Layout';
 
 function App() {
     return (
-        <AuthProvider>
-            <BrowserRouter>
-                <Routes>
+        <DialogProvider>
+            <AuthProvider>
+                <DialogContainer />
+                <BrowserRouter>
+                    <Routes>
                     {/* Public Routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
@@ -51,8 +55,9 @@ function App() {
                     {/* Catch all */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-            </BrowserRouter>
-        </AuthProvider>
+                </BrowserRouter>
+            </AuthProvider>
+        </DialogProvider>
     );
 }
 

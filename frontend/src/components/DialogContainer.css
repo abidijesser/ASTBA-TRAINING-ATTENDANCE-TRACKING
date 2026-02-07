@@ -1,0 +1,222 @@
+/**
+ * Dialog Container Styles
+ * Modern Bootstrap-inspired dialog/modal styling
+ */
+
+.dialog-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+}
+
+.dialog-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 9998;
+}
+
+.dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow: auto;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.dialog-content {
+    padding: 2rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.dialog-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    font-size: 1.75rem;
+    font-weight: bold;
+    flex-shrink: 0;
+    color: white;
+}
+
+.dialog-icon-alert {
+    background: linear-gradient(135deg, #4169e1 0%, #2558d0 100%);
+}
+
+.dialog-icon-success {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+}
+
+.dialog-icon-error {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+}
+
+.dialog-icon-confirm {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+}
+
+.dialog-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.dialog-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a202c;
+    line-height: 1.4;
+}
+
+.dialog-message {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #4a5568;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.dialog-footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    background: #f7fafc;
+    border-radius: 0 0 12px 12px;
+}
+
+.dialog-btn {
+    padding: 0.625rem 1.5rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+}
+
+.dialog-btn:hover {
+    transform: translateY(-1px);
+}
+
+.dialog-btn:active {
+    transform: translateY(0);
+}
+
+.dialog-btn-close,
+.dialog-btn-confirm {
+    background: linear-gradient(135deg, #4169e1 0%, #2558d0 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(65, 105, 225, 0.3);
+}
+
+.dialog-btn-close:hover,
+.dialog-btn-confirm:hover {
+    background: linear-gradient(135deg, #2558d0 0%, #1a3ba8 100%);
+    box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
+}
+
+.dialog-btn-cancel {
+    background: #e2e8f0;
+    color: #4a5568;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dialog-btn-cancel:hover {
+    background: #cbd5e0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Dialog Type Styling */
+.dialog-success {
+    border-left: 4px solid #48bb78;
+}
+
+.dialog-error {
+    border-left: 4px solid #f56565;
+}
+
+.dialog-confirm {
+    border-left: 4px solid #ed8936;
+}
+
+.dialog-alert {
+    border-left: 4px solid #4169e1;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .dialog {
+        width: calc(100% - 2rem);
+        max-width: none;
+        border-radius: 8px;
+    }
+
+    .dialog-content {
+        padding: 1.5rem;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .dialog-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.5rem;
+    }
+
+    .dialog-title {
+        font-size: 1.1rem;
+    }
+
+    .dialog-message {
+        font-size: 0.9rem;
+    }
+
+    .dialog-footer {
+        padding: 1rem 1.5rem;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .dialog-btn {
+        width: 100%;
+        min-width: auto;
+    }
+}

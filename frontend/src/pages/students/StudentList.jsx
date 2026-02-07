@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useDialog } from '../../context/DialogContext';
 import { studentAPI } from '../../api/students';
 import { formationAPI } from '../../api/formations';
 import { Button, Card, Modal, Input } from '../../components/ui';
@@ -12,6 +13,7 @@ import './StudentList.css';
  */
 const StudentList = () => {
     const { isResponsable } = useAuth();
+    const { showAlert, showConfirm, showError, showSuccess } = useDialog();
     const [students, setStudents] = useState([]);
     const [formations, setFormations] = useState([]); // Formations for assignment
     const [loading, setLoading] = useState(true);
@@ -104,7 +106,7 @@ const StudentList = () => {
                     await formationAPI.assignStudent(formData.formation_id, response.data.eleve._id);
                 } catch (assignError) {
                     console.error('Error assigning formation:', assignError);
-                    alert("L'élève a été créé mais l'inscription à la formation a échoué.");
+                    showAlert("L'élève a été créé mais l'inscription à la formation a échoué.");
                 }
             }
 
@@ -121,14 +123,15 @@ const StudentList = () => {
             fetchStudents();
         } catch (error) {
             console.error('Error creating student:', error);
-            alert(error.response?.data?.message || 'Erreur lors de la création');
+            showError(error.response?.data?.message || 'Erreur lors de la création');
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer cet élève ?')) {
+        const confirmed = await showConfirm('Êtes-vous sûr de vouloir supprimer cet élève ?', 'Supprimer l\'élève');
+        if (confirmed) {
             try {
                 await studentAPI.delete(id);
                 fetchStudents();

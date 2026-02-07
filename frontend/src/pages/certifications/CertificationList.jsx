@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { certificationAPI } from '../../api/certifications';
+import { useDialog } from '../../context/DialogContext';
 import { Button, Card } from '../../components/ui';
 import './CertificationList.css';
 
 const CertificationList = () => {
+    const { showAlert, showError } = useDialog();
     const [certifications, setCertifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
@@ -36,13 +38,13 @@ const CertificationList = () => {
     const handleDownload = async (id) => {
         try {
             const response = await certificationAPI.download(id);
-            alert(response.message); // For now, just show the message
+            showAlert(response.message); // For now, just show the message
             if (response.data?.download_url) {
                 window.open(response.data.download_url, '_blank');
             }
         } catch (error) {
             console.error('Error downloading certificate:', error);
-            alert('Erreur lors du téléchargement');
+            showError('Erreur lors du téléchargement');
         }
     };
 
