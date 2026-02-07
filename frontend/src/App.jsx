@@ -5,8 +5,8 @@ import { PreferenceProvider, usePreferences } from './context/PreferenceContext'
 import DialogContainer from './components/DialogContainer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AvatarAssistant from './components/AvatarAssistant';
-import SignInterpreter from './components/SignInterpreter';
-import SignAvatar from './components/SignAvatar';
+import SignLanguagePlayer from './components/SignLanguagePlayer';
+import SignLanguageLibraryBrowser from './components/SignLanguageLibraryBrowser';
 import SignSelectionHelper from './components/SignSelectionHelper';
 
 // Pages
@@ -72,9 +72,8 @@ function AppRoot() {
                 <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
                 <AvatarAssistant />
-                {/* Show avatar signer when sign mode on; keep video as fallback */}
-                <SignInterpreter />
-                <SignAvatar />
+                <SignLanguagePlayer />
+                <SignLanguageLibraryBrowser />
                 <SignSelectionHelper />
             </BrowserRouter>
         </div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { normalizePhraseExact } from '../sign/signLanguageLibrary';
 
-// Globally shows a small floating button near selected text to open the sign controls
+// Globally shows a small floating button near selected text to open sign-language video.
 function SignSelectionHelper() {
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -9,8 +10,8 @@ function SignSelectionHelper() {
 
   useEffect(() => {
     const onMouseUp = () => {
-      const sel = window.getSelection && window.getSelection();
-      const str = sel ? String(sel.toString()).trim() : '';
+      const sel = globalThis.getSelection?.();
+      const str = sel ? normalizePhraseExact(sel.toString()) : '';
       if (!str) { setVisible(false); return; }
       const range = sel.rangeCount ? sel.getRangeAt(0) : null;
       const rect = range ? range.getBoundingClientRect() : null;
@@ -27,7 +28,10 @@ function SignSelectionHelper() {
   return (
     <button
       ref={btnRef}
-      onClick={() => { globalThis.openSignControls?.(text); setVisible(false); }}
+      onClick={() => {
+        globalThis.openSignLanguage?.(text);
+        setVisible(false);
+      }}
       style={{
         position: 'absolute',
         left: pos.x,

@@ -6,6 +6,107 @@ import { glossToSequence, keyToSequence } from '../sign/lexicon';
 // API: globalThis.playSignAvatar(key), globalThis.playSiGML(si), globalThis.playGlossText(text)
 // This is a minimal POC: simple rig with arms + hand; gestures are simplified
 
+function createFinger(THREE, skinMaterial, handGroup, x) {
+  const base = new THREE.Group();
+  base.position.set(x, 0.06, 0.02);
+  handGroup.add(base);
+
+  const seg1 = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 0.02, 0.08, 16),
+    skinMaterial
+  );
+  seg1.castShadow = true;
+  seg1.position.set(0, 0.04, 0);
+  base.add(seg1);
+
+  const seg2 = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.018, 0.018, 0.06, 16),
+    skinMaterial
+  );
+  seg2.castShadow = true;
+  seg2.position.set(0, 0.08, 0);
+  base.add(seg2);
+
+  return {
+    base,
+    seg1,
+    seg2,
+    neutral: { baseX: 0, seg1X: 0, seg2X: 0 },
+  };
+}
+
+function setNeutralFingerPose(fingers) {
+  fingers.forEach((f, i) => {
+    const baseX = -0.2 - i * 0.02;
+    const seg1X = -0.1;
+    const seg2X = -0.05;
+    f.base.rotation.x = baseX;
+    f.seg1.rotation.x = seg1X;
+    f.seg2.rotation.x = seg2X;
+    f.neutral = { baseX, seg1X, seg2X };
+  });
+}
+
+function buildHand(THREE, handGroup) {
+  const skinMaterial = new THREE.MeshStandardMaterial({ color: 0xf59e0b });
+
+  const palm = new THREE.Mesh(
+    new THREE.BoxGeometry(0.18, 0.12, 0.08),
+    skinMaterial
+  );
+  palm.castShadow = true;
+  handGroup.add(palm);
+
+  const fingerPositions = [-0.07, -0.035, 0, 0.035, 0.07];
+  const fingers = fingerPositions.map((x) => createFinger(THREE, skinMaterial, handGroup, x));
+
+  // Thumb offset
+  fingers[0].base.position.set(fingerPositions[0], 0.02, -0.02);
+
+  setNeutralFingerPose(fingers);
+  return { palm, fingers };
+}
+
+function setHandsPose(rig, name) {
+  if (!rig?.leftArm?.fingers || !rig?.rightArm?.fingers) return;
+
+  const apply = (arm, open, isOk) => {
+    arm.fingers.forEach((f) => {
+      const curl1 = open ? -0.05 : -0.6;
+      const curl2 = open ? -0.02 : -0.5;
+      f.seg1.rotation.x = curl1;
+      f.seg2.rotation.x = curl2;
+      // keep base around neutral unless OK needs it
+      if (f.neutral) f.base.rotation.x = f.neutral.baseX;
+    });
+    if (isOk) {
+      // Thumb touches index finger (approx)
+      if (arm.fingers[1]) arm.fingers[1].base.rotation.x = -0.3;
+      if (arm.fingers[0]) arm.fingers[0].base.rotation.x = -0.3;
+    }
+  };
+
+  if (name === 'neutral') {
+    setNeutralFingerPose(rig.leftArm.fingers);
+    setNeutralFingerPose(rig.rightArm.fingers);
+    return;
+  }
+  if (name === 'absent') {
+    apply(rig.leftArm, true, false);
+    apply(rig.rightArm, true, false);
+    return;
+  }
+  if (name === 'present') {
+    apply(rig.leftArm, false, false);
+    apply(rig.rightArm, false, false);
+    return;
+  }
+  if (name === 'ok') {
+    apply(rig.leftArm, false, true);
+    apply(rig.rightArm, false, true);
+  }
+}
+
 function SignAvatar() {
   const { prefs } = usePreferences();
   const mountRef = useRef(null);
@@ -120,43 +221,7 @@ function SignAvatar() {
           handGroup.position.set(0, -0.18, 0);
           elbow.add(handGroup);
 
-          const palm = new THREE.Mesh(
-            new THREE.BoxGeometry(0.18, 0.12, 0.08),
-            new THREE.MeshStandardMaterial({ color: 0xf59e0b })
-          );
-          palm.castShadow = true;
-          handGroup.add(palm);
-
-          const fingers = [];
-          const fingerPositions = [-0.07, -0.035, 0, 0.035, 0.07];
-          const makeFinger = (x) => {
-            const base = new THREE.Group();
-            base.position.set(x, 0.06, 0.02);
-            handGroup.add(base);
-            const seg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.08, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
-            seg1.castShadow = true;
-            seg1.position.set(0, 0.04, 0);
-            base.add(seg1);
-            const seg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.06, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
-            seg2.castShadow = true;
-            seg2.position.set(0, 0.08, 0);
-            base.add(seg2);
-            return { base, seg1, seg2 };
-          };
-          fingerPositions.forEach((x) => fingers.push(makeFinger(x)));
-
-          // Thumb offset
-          fingers[0].base.position.set(fingerPositions[0], 0.02, -0.02);
-
-          // Neutral hand pose: slight curl
-          const setNeutralFingers = () => {
-            fingers.forEach((f, i) => {
-              f.base.rotation.x = -0.2 - i * 0.02;
-              f.seg1.rotation.x = -0.1;
-              f.seg2.rotation.x = -0.05;
-            });
-          };
-          setNeutralFingers();
+          const { fingers } = buildHand(THREE, handGroup);
 
           // Neutral arm pose: slight forward
           group.rotation.x = -0.2;
@@ -214,6 +279,9 @@ function SignAvatar() {
     const duration = 900;
     const start = performance.now();
 
+    // Apply finger pose once at gesture start
+    setHandsPose(rig, name);
+
     // Capture initial rotations
     const init = {
       lGroupX: rig.leftArm.group.rotation.x,
@@ -238,22 +306,6 @@ function SignAvatar() {
       rig.leftArm.elbow.rotation.x = init.lElbowX + (tgt.lElbowX - init.lElbowX) * ease;
       rig.rightArm.group.rotation.x = init.rGroupX + (tgt.rGroupX - init.rGroupX) * ease;
       rig.rightArm.elbow.rotation.x = init.rElbowX + (tgt.rElbowX - init.rElbowX) * ease;
-      // Finger poses
-      const poseHand = (arm, open) => {
-        arm.fingers.forEach((f, i) => {
-          const curl = open ? -0.05 : -0.6;
-          const curl2 = open ? -0.02 : -0.5;
-          f.seg1.rotation.x = curl;
-          f.seg2.rotation.x = curl2;
-        });
-        if (name === 'ok') {
-          // Thumb touches index finger
-          arm.fingers[1].base.rotation.x = -0.3;
-          arm.fingers[0].base.rotation.x = -0.3;
-        }
-      };
-      if (name === 'absent') { poseHand(rig.leftArm, true); poseHand(rig.rightArm, true); }
-      else if (name === 'present' || name === 'ok') { poseHand(rig.leftArm, false); poseHand(rig.rightArm, false); }
       if (t < 1) requestAnimationFrame(step);
       else setTimeout(() => playGesture('neutral'), 500);
     };
@@ -314,7 +366,7 @@ function SignAvatar() {
     <div
       style={{
         position: 'fixed',
-        right: 16,
+        right: 312,
         bottom: 16,
         width: 280,
         height: 220,

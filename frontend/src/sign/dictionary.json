@@ -1,10 +1,10 @@
 {
-  "bonjour": { "actions": [{ "handshape": "neutral" }] },
-  "merci": { "actions": [{ "handshape": "neutral" }] },
-  "gerer le planning des cours": { "actions": [{ "handshape": "neutral" }] },
-  "prochain eleve": { "actions": [{ "handshape": "neutral" }] },
-  "presence enregistre": { "actions": [{ "handshape": "present" }] },
-  "marquer absent": { "actions": [{ "handshape": "absent" }] },
-  "confirmer profil": { "actions": [{ "handshape": "ok" }] },
-  "erreur": { "actions": [{ "handshape": "neutral" }] }
+  "bonjour": { "actions": [{ "type": "clip", "url": "/sign/lsf_bonjour.mp4" }] },
+  "merci": { "actions": [{ "type": "clip", "url": "/sign/lsf_merci.mp4" }] },
+  "gerer le planning des cours": { "actions": [{ "type": "clip", "url": "/sign/lsf_gerer_planning_des_cours.mp4" }] },
+  "prochain eleve": { "actions": [{ "type": "clip", "url": "/sign/lsf_prochain_eleve.mp4" }] },
+  "presence enregistre": { "actions": [{ "type": "clip", "url": "/sign/lsf_presence_enregistre.mp4" }] },
+  "marquer absent": { "actions": [{ "type": "clip", "url": "/sign/lsf_marquer_absent.mp4" }] },
+  "confirmer profil": { "actions": [{ "type": "clip", "url": "/sign/lsf_confirmer_profil.mp4" }] },
+  "erreur": { "actions": [{ "type": "clip", "url": "/sign/lsf_erreur.mp4" }] }
 }

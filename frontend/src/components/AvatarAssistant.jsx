@@ -263,7 +263,7 @@ function AvatarAssistant() {
             loop
             onError={(e) => {
               // If the external demo fails, try a local loop clip shown by SignInterpreter
-                try { globalThis.playSignClip?.('/assets/sign-language/loop.webm'); } catch {}
+                try { globalThis.playSign?.('welcome'); } catch {}
             }}
           >
             <source src={videoByLang} type="video/webm" />

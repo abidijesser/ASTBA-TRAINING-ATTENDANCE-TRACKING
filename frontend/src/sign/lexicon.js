@@ -3,13 +3,17 @@
 import dict from './dictionary.json';
 
 function normalize(text) {
-  return String(text || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replaceAll(/\p{Diacritic}/gu, '')
-    .replaceAll(/[^a-z0-9\s']/g, ' ')
-    .replaceAll(/\s+/g, ' ')
-    .trim();
+  let t = String(text || '').toLowerCase().normalize('NFD');
+  // Strip combining diacritics without regex replace
+  t = Array.from(t).filter((ch) => {
+    const code = ch.codePointAt(0);
+    return !(code >= 0x300 && code <= 0x36f);
+  }).join('');
+  // Keep only allowed characters; replace others by space
+  t = Array.from(t).map((ch) => /[a-z0-9 ']/.test(ch) ? ch : ' ').join('');
+  // Collapse spaces
+  t = t.split(' ').filter(Boolean).join(' ');
+  return t.trim();
 }
 
 function longestPhraseMatch(tokens, start) {
@@ -58,6 +62,25 @@ export function glossToSequence(text) {
     }
   }
   return { sequence: actions };
+}
+
+// Find a clip URL from text using dictionary longest-match; returns null if none
+export function findClipForText(text) {
+  const norm = normalize(text);
+  if (!norm) return null;
+  const tokens = norm.split(' ');
+  let i = 0;
+  while (i < tokens.length) {
+    const match = longestPhraseMatch(tokens, i);
+    if (match) {
+      const clipAct = (match.entry.actions || []).find((a) => a.type === 'clip' && a.url);
+      if (clipAct) return clipAct.url;
+      i += match.len;
+    } else {
+      i += 1;
+    }
+  }
+  return null;
 }
 
 // Provide a suggestion for a free-form phrase
