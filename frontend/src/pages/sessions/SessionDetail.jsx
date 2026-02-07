@@ -17,6 +17,7 @@ const SessionDetail = () => {
     const [attendanceMap, setAttendanceMap] = useState({});
     const [savingAttendance, setSavingAttendance] = useState(false);
     const [finishingSession, setFinishingSession] = useState(false);
+    const [announcement, setAnnouncement] = useState('');
     // Guided mode state
     const [guidedMode, setGuidedMode] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -106,9 +107,9 @@ const SessionDetail = () => {
                 }
                 // Trigger sign clip for confirmation if sign mode is on
                 if (prefs.signLanguageMode) {
-                    try { globalThis.playSign?.('presenceRecorded'); } catch {}
+                    try { globalThis.playSign?.('presenceRecorded'); } catch { }
                 }
-            } catch {}
+            } catch { }
             fetchSessionData(); // Refresh data
         } catch (error) {
             console.error('Error saving attendance:', error);
@@ -131,7 +132,7 @@ const SessionDetail = () => {
             utter.lang = langCode;
             globalThis.speechSynthesis.cancel();
             globalThis.speechSynthesis.speak(utter);
-        } catch {}
+        } catch { }
     };
 
     const startGuidedMode = () => {
@@ -176,12 +177,12 @@ const SessionDetail = () => {
             setGestureIndicator(statusLabel === 'Présent' ? 'present' : 'absent');
             clearTimeout(gestureIndicatorRef.current);
             gestureIndicatorRef.current = setTimeout(() => setGestureIndicator(null), 1000);
-        } catch {}
+        } catch { }
         advancingRef.current = true;
         // Block further gesture triggers during the wait window
         try {
             gestureCooldownRef.current = performance.now() + 2900;
-        } catch {}
+        } catch { }
         advanceStudent();
     };
 
@@ -270,9 +271,9 @@ const SessionDetail = () => {
         load();
         return () => {
             cancelAnimationFrame(rafRef.current);
-            try { handsRef.current?.close(); } catch {}
-            try { stream?.getTracks()?.forEach((t) => t.stop()); } catch {}
-            try { advanceTimerRef.current && clearTimeout(advanceTimerRef.current); } catch {}
+            try { handsRef.current?.close(); } catch { }
+            try { stream?.getTracks()?.forEach((t) => t.stop()); } catch { }
+            try { advanceTimerRef.current && clearTimeout(advanceTimerRef.current); } catch { }
         };
     }, [cameraOn, guidedMode]);
 
@@ -283,6 +284,17 @@ const SessionDetail = () => {
         try {
             setFinishingSession(true);
             const res = await sessionAPI.finish(id);
+
+            // Announce session completion
+            setAnnouncement('La séance est terminée');
+
+            // Check if level was unlocked from the response
+            if (res.data?.levelCompleted || res.levelCompleted) {
+                setTimeout(() => {
+                    setAnnouncement('Le niveau suivant est débloqué');
+                }, 1500);
+            }
+
             showSuccess(res.message || 'Séance terminée avec succès !');
             fetchSessionData();
         } catch (error) {
@@ -314,6 +326,11 @@ const SessionDetail = () => {
     const isFinished = session.statut === 'terminee';
     const canEditAttendance = user?.role === 'formateur';
 
+    // Check if all attendance is marked
+    const allAttendanceMarked = students.length > 0 && students.every(student =>
+        attendanceMap[student._id] === 'Présent' || attendanceMap[student._id] === 'Absent'
+    );
+
     return (
         <div className="session-detail">
             <div className="page-header">
@@ -337,7 +354,14 @@ const SessionDetail = () => {
                             <Button onClick={handleSaveAttendance} loading={savingAttendance} variant="secondary">
                                 Enregistrer les présences
                             </Button>
-                            <Button onClick={handleFinishSession} loading={finishingSession} variant="primary">
+                            <Button
+                                onClick={handleFinishSession}
+                                loading={finishingSession}
+                                variant="primary"
+                                disabled={!allAttendanceMarked}
+                                aria-disabled={!allAttendanceMarked}
+                                aria-label={allAttendanceMarked ? "Terminer la séance" : "Terminer la séance - Toutes les présences doivent être marquées"}
+                            >
                                 Terminer la séance
                             </Button>
                         </>
@@ -399,6 +423,15 @@ const SessionDetail = () => {
                         </div>
                     )}
 
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        className="sr-only"
+                    >
+                        {announcement}
+                    </div>
+
                     <div className="attendance-list">
                         {students.length === 0 ? (
                             <p>Aucun élève inscrit à ce niveau.</p>
@@ -421,16 +454,22 @@ const SessionDetail = () => {
                                             <td>
                                                 <div className="status-buttons">
                                                     <button
+                                                        type="button"
                                                         className={`status-btn present ${attendanceMap[student._id] === 'Présent' ? 'active' : ''}`}
                                                         onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'Présent')}
                                                         disabled={isFinished || !canEditAttendance}
+                                                        aria-label={`Marquer ${student.nom} ${student.prenom} comme présent`}
+                                                        aria-pressed={attendanceMap[student._id] === 'Présent'}
                                                     >
                                                         P
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         className={`status-btn absent ${attendanceMap[student._id] === 'Absent' ? 'active' : ''}`}
                                                         onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'Absent')}
                                                         disabled={isFinished || !canEditAttendance}
+                                                        aria-label={`Marquer ${student.nom} ${student.prenom} comme absent`}
+                                                        aria-pressed={attendanceMap[student._id] === 'Absent'}
                                                     >
                                                         A
                                                     </button>

@@ -37,9 +37,11 @@ const Button = ({
             className={classNames}
             disabled={disabled || loading}
             onClick={onClick}
+            aria-busy={loading}
+            aria-disabled={disabled || loading}
             {...props}
         >
-            {loading && <span className="btn-spinner"></span>}
+            {loading && <span className="btn-spinner" aria-hidden="true"></span>}
             <span className={loading ? 'btn-content-loading' : ''}>{children}</span>
         </button>
     );

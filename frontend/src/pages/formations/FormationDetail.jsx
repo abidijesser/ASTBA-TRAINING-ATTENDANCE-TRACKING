@@ -46,11 +46,24 @@ const FormationDetail = () => {
     });
     const [updating, setUpdating] = useState(false);
     const [generatingCertificates, setGeneratingCertificates] = useState(false);
+    const [levelAnnouncement, setLevelAnnouncement] = useState('');
 
     useEffect(() => {
         fetchFormation();
         fetchEnrolledStudents();
     }, [id]);
+
+    // Watch for niveau_actuel changes to announce level unlock
+    useEffect(() => {
+        if (formation && formation.niveau_actuel) {
+            // Only announce if level changed (not on initial load)
+            const storedLevel = sessionStorage.getItem(`formation_${id}_level`);
+            if (storedLevel && parseInt(storedLevel) < formation.niveau_actuel) {
+                setLevelAnnouncement('Le niveau est maintenant accessible');
+            }
+            sessionStorage.setItem(`formation_${id}_level`, formation.niveau_actuel.toString());
+        }
+    }, [formation?.niveau_actuel, id]);
 
     const fetchFormation = async () => {
         try {
@@ -287,45 +300,70 @@ const FormationDetail = () => {
                         <h3>Niveaux ({formation.niveaux?.length || 0})</h3>
                     </div>
                     <div className="levels-list">
-                        {formation.niveaux?.map((niveau, index) => (
-                            <div key={niveau._id} className={`level-item ${formation.niveau_actuel === niveau.numero ? 'current-level' : ''}`}>
-                                <div className="level-header-row">
-                                    <div className="level-number">{index + 1}</div>
-                                    <div className="level-info">
-                                        <h4>{niveau.nom}</h4>
-                                        <p>{niveau.description}</p>
-                                    </div>
-                                    <span className={`level-status-badge ${formation.niveau_actuel > niveau.numero ? 'completed' : formation.niveau_actuel === niveau.numero ? 'active' : 'locked'}`}>
-                                        {formation.niveau_actuel > niveau.numero ? 'Terminé' : formation.niveau_actuel === niveau.numero ? 'En cours' : 'Bloqué'}
-                                    </span>
-                                </div>
+                        {formation.niveaux?.map((niveau, index) => {
+                            const isLocked = formation.niveau_actuel < niveau.numero;
+                            const isAccessible = formation.niveau_actuel >= niveau.numero;
+                            const statusLabel = formation.niveau_actuel > niveau.numero ? 'Terminé' :
+                                formation.niveau_actuel === niveau.numero ? 'En cours' : 'Bloqué';
 
-                                <div className="level-sessions">
-                                    <h5>Séances du niveau</h5>
-                                    <div className="sessions-list-mini">
-                                        {niveau.seances?.map((seance) => (
-                                            <div key={seance._id} className={`session-item-mini ${seance.statut}`}>
-                                                <div className="session-mini-info">
-                                                    <span className="session-num">S{seance.numero}</span>
-                                                    <span className="session-date">{new Date(seance.date).toLocaleDateString()}</span>
+                            return (
+                                <div
+                                    key={niveau._id}
+                                    className={`level-item ${formation.niveau_actuel === niveau.numero ? 'current-level' : ''}`}
+                                    tabIndex={isLocked ? -1 : 0}
+                                    aria-disabled={isLocked}
+                                    aria-label={`${niveau.nom} - ${isLocked ? 'Niveau verrouillé' : 'Niveau accessible'} - ${statusLabel}`}
+                                    role="region"
+                                >
+                                    <div className="level-header-row">
+                                        <div className="level-number">{index + 1}</div>
+                                        <div className="level-info">
+                                            <h4>{niveau.nom}</h4>
+                                            <p>{niveau.description}</p>
+                                        </div>
+                                        <span className={`level-status-badge ${formation.niveau_actuel > niveau.numero ? 'completed' : formation.niveau_actuel === niveau.numero ? 'active' : 'locked'}`}>
+                                            {statusLabel}
+                                        </span>
+                                    </div>
+
+                                    <div className="level-sessions">
+                                        <h5>Séances du niveau</h5>
+                                        <div className="sessions-list-mini">
+                                            {niveau.seances?.map((seance) => (
+                                                <div key={seance._id} className={`session-item-mini ${seance.statut}`}>
+                                                    <div className="session-mini-info">
+                                                        <span className="session-num">S{seance.numero}</span>
+                                                        <span className="session-date">{new Date(seance.date).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <Button
+                                                        size="small"
+                                                        variant="ghost"
+                                                        onClick={() => navigate(`/sessions/${seance._id}`)}
+                                                        disabled={formation.niveau_actuel < niveau.numero}
+                                                        aria-label={isLocked ? `Séance ${seance.numero} - Niveau verrouillé` : `${seance.statut === 'terminee' ? 'Consulter' : 'Gérer'} séance ${seance.numero}`}
+                                                    >
+                                                        {seance.statut === 'terminee' ? 'Consulter' : 'Gérer'}
+                                                    </Button>
                                                 </div>
-                                                <Button
-                                                    size="small"
-                                                    variant="ghost"
-                                                    onClick={() => navigate(`/sessions/${seance._id}`)}
-                                                    disabled={formation.niveau_actuel < niveau.numero}
-                                                >
-                                                    {seance.statut === 'terminee' ? 'Consulter' : 'Gérer'}
-                                                </Button>
-                                            </div>
-                                        ))}
-                                        {(!niveau.seances || niveau.seances.length === 0) && (
-                                            <p className="no-sessions">Aucune séance générée.</p>
-                                        )}
+                                            ))}
+                                            {(!niveau.seances || niveau.seances.length === 0) && (
+                                                <p className="no-sessions">Aucune séance générée.</p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
+                    </div>
+
+                    {/* Screen reader announcement for level unlock */}
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        className="sr-only"
+                    >
+                        {levelAnnouncement}
                     </div>
                 </Card>
 
