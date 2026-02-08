@@ -94,7 +94,7 @@ const Layout = () => {
                         </div>
                         <div className="user-details">
                             <div className="user-name">{user?.nom} {user?.prenom}</div>
-                            <div className="user-role">{t(`auth.role${user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}`) || user?.role}</div>
+                            <div className="user-role">{t(`${user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}`) || user?.role}</div>
                         </div>
                     </div>
                     <button onClick={handleLogout} className="logout-btn" type="button" aria-label={t('nav.logout')}>

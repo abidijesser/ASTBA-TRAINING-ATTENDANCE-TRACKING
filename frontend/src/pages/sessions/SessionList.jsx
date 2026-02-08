@@ -56,11 +56,13 @@ const SessionList = () => {
             const type = String(session?.type || '').toLowerCase();
             const statut = String(session?.statut || '').toLowerCase();
             const lieu = String(session?.lieu || '').toLowerCase();
-            const numero = session?.numero != null ? String(session.numero).toLowerCase() : '';
+            const numero = (session?.numero === null || session?.numero === undefined) ? '' : String(session.numero).toLowerCase();
 
             const formationNom = String(session?.niveau_id?.formation_id?.nom || '').toLowerCase();
             const niveauNom = String(session?.niveau_id?.nom || '').toLowerCase();
-            const niveauNumero = session?.niveau_id?.numero != null ? String(session.niveau_id.numero).toLowerCase() : '';
+            const niveauNumero = (session?.niveau_id?.numero === null || session?.niveau_id?.numero === undefined)
+                ? ''
+                : String(session.niveau_id.numero).toLowerCase();
 
             const formateurNom = String(session?.formateur_id?.nom || '').toLowerCase();
             const formateurPrenom = String(session?.formateur_id?.prenom || '').toLowerCase();

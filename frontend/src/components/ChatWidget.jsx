@@ -178,30 +178,38 @@ export default function ChatWidget() {
                         <div className="chat-footer">
                             
                             <div className="chat-questions" aria-label="Questions prédéfinies">
-                                {questions.length === 0 ? (
-                                    <button type="button" className="chat-qcard" disabled>
-                                        Chargement…
-                                    </button>
-                                ) : filteredQuestions.length === 0 ? (
-                                    <div className="chat-empty-mini">Aucune question ne correspond à la recherche.</div>
-                                ) : (
-                                    <div className="chat-qgrid">
-                                        {filteredQuestions.map((q) => (
-                                            <button
-                                                key={q.id}
-                                                type="button"
-                                                className="chat-qcard"
-                                                onClick={() => ask(q)}
-                                                disabled={loading}
-                                                title={q.title}
-                                            >
-                                                {/* <div className="chat-qtitle">{q.title}</div> */}
-                                                {q.category ? <div className="chat-qmeta">{q.category}</div> : null}
-                                                {q.description ? <div className="chat-qdesc">{q.description}</div> : null}
+                                {(() => {
+                                    if (questions.length === 0) {
+                                        return (
+                                            <button type="button" className="chat-qcard" disabled>
+                                                Chargement…
                                             </button>
-                                        ))}
-                                    </div>
-                                )}
+                                        );
+                                    } else if (filteredQuestions.length === 0) {
+                                        return (
+                                            <div className="chat-empty-mini">Aucune question ne correspond à la recherche.</div>
+                                        );
+                                    } else {
+                                        return (
+                                            <div className="chat-qgrid">
+                                                {filteredQuestions.map((q) => (
+                                                    <button
+                                                        key={q.id}
+                                                        type="button"
+                                                        className="chat-qcard"
+                                                        onClick={() => ask(q)}
+                                                        disabled={loading}
+                                                        title={q.title}
+                                                    >
+                                                        {/* <div className="chat-qtitle">{q.title}</div> */}
+                                                        {q.category ? <div className="chat-qmeta">{q.category}</div> : null}
+                                                        {q.description ? <div className="chat-qdesc">{q.description}</div> : null}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        );
+                                    }
+                                })()}
                             </div>
                         </div>
                     </div>

@@ -14,6 +14,11 @@ export const signLanguageLibrary = {
     language: "LSF",
     source: "commons.wikimedia.org",
   },
+  "Dashboard": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/9/92/Langue.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
   "Élèves": {
     videoUrl: "https://upload.wikimedia.org/wikipedia/commons/8/82/LL-Q33302_%28fsl%29-Laura_Jauvert-%C3%89l%C3%A8ve.webm",
     language: "LSF",
@@ -24,8 +29,28 @@ export const signLanguageLibrary = {
     language: "LSF",
     source: "commons.wikimedia.org",
   },
+  "Sessions": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/LL-Q33302_%28fsl%29-Laura_Jauvert-Quand_%3F.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "Session": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/LL-Q33302_%28fsl%29-Laura_Jauvert-Quand_%3F.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
   "Mes Formations": {
     videoUrl: "https://upload.wikimedia.org/wikipedia/commons/0/09/LL-Q33302_%28fsl%29-Laura_Jauvert-Formation.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "Formations": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/0/09/LL-Q33302_%28fsl%29-Laura_Jauvert-Formation.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "Students": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/8/82/LL-Q33302_%28fsl%29-Laura_Jauvert-%C3%89l%C3%A8ve.webm",
     language: "LSF",
     source: "commons.wikimedia.org",
   },

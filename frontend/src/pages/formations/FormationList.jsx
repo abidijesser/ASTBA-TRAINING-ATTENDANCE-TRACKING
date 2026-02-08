@@ -54,8 +54,12 @@ const FormationList = () => {
             const nom = String(formation?.nom || '').toLowerCase();
             const description = String(formation?.description || '').toLowerCase();
             const duree = String(formation?.duree_estimee || '').toLowerCase();
-            const niveauActuel = formation?.niveau_actuel != null ? String(formation.niveau_actuel).toLowerCase() : '';
-            const actif = formation?.actif != null ? String(formation.actif).toLowerCase() : '';
+            const niveauActuel = (formation?.niveau_actuel === null || formation?.niveau_actuel === undefined)
+                ? ''
+                : String(formation.niveau_actuel).toLowerCase();
+            const actif = (formation?.actif === null || formation?.actif === undefined)
+                ? ''
+                : String(formation.actif).toLowerCase();
             const dateDebut = formation?.date_debut ? new Date(formation.date_debut).toLocaleDateString().toLowerCase() : '';
 
             const responsableNom = String(formation?.responsable_id?.nom || '').toLowerCase();
@@ -187,12 +191,120 @@ const FormationList = () => {
     // Role check specifically for formateur vs manage roles
     const showAsTable = user?.role === 'formateur';
 
+    const subtitle = t('formation.listSubtitle');
+
+    let listContent = null;
+    if (loading) {
+        listContent = <div className="loading-state">{t('common.loading')}</div>;
+    } else if (filteredFormations.length === 0) {
+        listContent = (
+            <Card className="empty-state">
+                <p>{t('formation.noFormations')}</p>
+            </Card>
+        );
+    } else if (showAsTable) {
+        listContent = (
+            <Card className="table-card">
+                <div className="table-container">
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th>{t('formation.name')}</th>
+                                <th>{t('formation.description')}</th>
+                                <th>{t('formation.startDate')}</th>
+                                <th>{t('formation.duration')}</th>
+                                <th>{t('formation.level')}</th>
+                                <th>{t('common.actions')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredFormations.map((formation) => {
+                                const dateText = formation?.date_debut ? new Date(formation.date_debut).toLocaleDateString() : '--';
+
+                                const dureeMois = Number.parseInt(formation?.duree_estimee, 10);
+                                const dureeText = Number.isFinite(dureeMois)
+                                    ? `${dureeMois} ${t('formation.months')}`
+                                    : (formation?.duree_estimee || '--');
+
+                                let niveauLabel = '--';
+                                if (Number.isFinite(formation?.niveau_actuel)) {
+                                    if (formation.niveau_actuel <= 4) niveauLabel = `${t('student.level')} ${formation.niveau_actuel}`;
+                                    else niveauLabel = t('formation.statusCompleted');
+                                }
+
+                                return (
+                                    <tr key={formation._id}>
+                                        <td className="bold">{formation.nom}</td>
+                                        <td className="text-muted">{formation.description?.substring(0, 60)}...</td>
+                                        <td>{dateText}</td>
+                                        <td>{dureeText}</td>
+                                        <td><span className="badge-info">{niveauLabel}</span></td>
+                                        <td>
+                                            <Link to={`/formations/${formation._id}`}>
+                                                <Button variant="ghost" size="small">{t('common.view')}</Button>
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
+        );
+    } else {
+        listContent = (
+            <div className="formations-grid">
+                {filteredFormations.map((formation) => {
+                    const dateText = formation?.date_debut ? new Date(formation.date_debut).toLocaleDateString() : '--';
+
+                    const dureeMois = Number.parseInt(formation?.duree_estimee, 10);
+                    const dureeText = Number.isFinite(dureeMois)
+                        ? `${dureeMois} ${t('formation.months')}`
+                        : (formation?.duree_estimee || '--');
+
+                    let niveauLabel = '--';
+                    if (Number.isFinite(formation?.niveau_actuel)) {
+                        if (formation.niveau_actuel <= 4) niveauLabel = `${t('student.level')} ${formation.niveau_actuel}`;
+                        else niveauLabel = t('formation.statusCompleted');
+                    }
+
+                    return (
+                        <Card key={formation._id} className="formation-card">
+                            <div className="formation-card-header">
+                                <h3>{formation.nom}</h3>
+                                <span className="badge-info">{niveauLabel}</span>
+                            </div>
+                            <div className="formation-info">
+                                <p><strong>{t('formation.startDate')}</strong> {dateText}</p>
+                                <p><strong>{t('formation.duration')}</strong> {dureeText}</p>
+                                <p className="text-muted">{formation.description}</p>
+                            </div>
+                            <div className="formation-actions">
+                                <Link to={`/formations/${formation._id}`} className="action-link">
+                                    <Button variant="secondary" size="small" fullWidth>
+                                        {t('formation.viewDetails')}
+                                    </Button>
+                                </Link>
+                                {isResponsable && (
+                                    <Button variant="danger" size="small" onClick={() => handleDelete(formation._id)}>
+                                        {t('common.delete')}
+                                    </Button>
+                                )}
+                            </div>
+                        </Card>
+                    );
+                })}
+            </div>
+        );
+    }
+
     return (
         <div className="formation-list">
             <div className="page-header">
                 <div>
                     <h1>{showAsTable ? t('dashboard.myTrainings') : t('formation.listTitle')}</h1>
-                    <p>{showAsTable ? t('formation.listSubtitle') : t('formation.listSubtitle')}</p>
+                    <p>{subtitle}</p>
                 </div>
                 {isResponsable && (
                     <Button onClick={() => setShowCreateModal(true)} className="btn-new">
@@ -214,111 +326,7 @@ const FormationList = () => {
                 </form>
             </Card>
 
-            {loading ? (
-                <div className="loading-state">{t('common.loading')}</div>
-            ) : filteredFormations.length === 0 ? (
-                <Card className="empty-state">
-                    <p>{t('formation.noFormations')}</p>
-                </Card>
-            ) : showAsTable ? (
-                <Card className="table-card">
-                    <div className="table-container">
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>{t('formation.name')}</th>
-                                    <th>{t('formation.description')}</th>
-                                    <th>{t('formation.startDate')}</th>
-                                    <th>{t('formation.duration')}</th>
-                                    <th>{t('formation.level')}</th>
-                                    <th>{t('common.actions')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredFormations.map((formation) => {
-                                    const hasDate = !!formation.date_debut;
-                                    const dateText = hasDate
-                                        ? new Date(formation.date_debut).toLocaleDateString()
-                                        : '--';
-                                    const dureeMois = parseInt(formation.duree_estimee);
-                                    const dureeText = Number.isFinite(dureeMois)
-                                        ? `${dureeMois} ${t('formation.months')}`
-                                        : (formation.duree_estimee || '--');
-
-                                    const niveauLabel = Number.isFinite(formation.niveau_actuel)
-                                        ? (formation.niveau_actuel <= 4 ? `${t('student.level')} ${formation.niveau_actuel}` : t('formation.statusCompleted'))
-                                        : '--';
-
-                                    return (
-                                        <tr key={formation._id}>
-                                            <td className="bold">{formation.nom}</td>
-                                            <td className="text-muted">{formation.description?.substring(0, 60)}...</td>
-                                            <td>{dateText}</td>
-                                            <td>{dureeText}</td>
-                                            <td>
-                                                <span className="badge-info">{niveauLabel}</span>
-                                            </td>
-                                            <td>
-                                                <Link to={`/formations/${formation._id}`}>
-                                                    <Button variant="ghost" size="small">
-                                                        {t('common.view')}
-                                                    </Button>
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </Card>
-            ) : (
-                <div className="formations-grid">
-                    {filteredFormations.map((formation) => {
-                        const hasDate = !!formation.date_debut;
-                        const dateText = hasDate
-                            ? new Date(formation.date_debut).toLocaleDateString()
-                            : '--';
-                        const dureeMois = parseInt(formation.duree_estimee);
-                        const dureeText = Number.isFinite(dureeMois)
-                            ? `${dureeMois} ${t('formation.months')}`
-                            : (formation.duree_estimee || '--');
-                        const niveauLabel = Number.isFinite(formation.niveau_actuel)
-                            ? (formation.niveau_actuel <= 4 ? `${t('student.level')} ${formation.niveau_actuel}` : t('formation.statusCompleted'))
-                            : '--';
-
-                        return (
-                            <Card key={formation._id} className="formation-card">
-                                <div className="formation-header">
-                                    <h3>{formation.nom}</h3>
-                                </div>
-                                <p className="formation-desc">{formation.description}</p>
-                                <div className="formation-meta">
-                                    <span>📅 {dateText}</span>
-                                    <span>⏱️ {dureeText}</span>
-                                    <span>📚 {niveauLabel}</span>
-                                </div>
-                                <div className="formation-actions">
-                                    <Link to={`/formations/${formation._id}`}>
-                                        <Button variant="secondary" size="small" fullWidth>
-                                            {t('formation.viewDetails')}
-                                        </Button>
-                                    </Link>
-                                    {isResponsable && (
-                                        <Button
-                                            variant="danger"
-                                            size="small"
-                                            onClick={() => handleDelete(formation._id)}
-                                        >
-                                            {t('common.delete')}
-                                        </Button>
-                                    )}
-                                </div>
-                            </Card>
-                        );
-                    })}
-                </div>
-            )}
+            {listContent}
 
             <Modal
                 isOpen={showCreateModal}
@@ -389,7 +397,7 @@ const FormationList = () => {
                         {medias.length > 0 && (
                             <div className="media-preview-list" style={{ marginTop: '10px' }}>
                                 {medias.map((m, idx) => (
-                                    <div key={idx} className="media-preview-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                    <div key={m.publicId || m.url} className="media-preview-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                         {m.type === 'image' ? (
                                             <img src={m.url} alt="media" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
                                         ) : (
