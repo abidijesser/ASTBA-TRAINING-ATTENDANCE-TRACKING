@@ -1,10 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui';
 import { dashboardAPI } from '../api/dashboard';
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Cell,
+    Legend,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
+import CertificationPredictorForm from '../components/CertificationPredictorForm';
 import './Dashboard.css';
+
+function ChartState({ loading, loadingLabel, hasData, emptyLabel, children }) {
+    if (loading) return <p className="no-data">{loadingLabel}</p>;
+    if (!hasData) return <p className="no-data">{emptyLabel}</p>;
+    return children;
+}
+
+ChartState.propTypes = {
+    loading: PropTypes.bool.isRequired,
+    loadingLabel: PropTypes.string.isRequired,
+    hasData: PropTypes.bool.isRequired,
+    emptyLabel: PropTypes.string.isRequired,
+    children: PropTypes.node.isRequired,
+};
 
 /**
  * Dashboard Page - Professional Admin Dashboard
@@ -13,22 +42,164 @@ import './Dashboard.css';
 const Dashboard = () => {
     const { user } = useAuth();
     const { t } = useLanguage();
-    const [stats, setStats] = useState({
-        students: 0,
-        activeFormations: 0,
-        sessionsToday: 0,
-        certifications: 0
-    });
+    const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [selectedTab, setSelectedTab] = useState('overview');
+    const [loadNotice, setLoadNotice] = useState('');
+
+    const cards = analytics?.cards || {
+        studentsTotal: 0,
+        formationsActive: 0,
+        sessionsToday: 0,
+        certificationsTotal: 0,
+        sessionsNext7Days: 0,
+        sessionsThisMonth: 0,
+        studentsActive: 0,
+        formationsTotal: 0,
+    };
+
+    const attendance = analytics?.attendance || {
+        byStatus: { present: 0, absent: 0, retard: 0, justifie: 0 },
+        total: 0,
+        presentLike: 0,
+        attendanceRate: 0,
+    };
+
+    const sessionsPerMonth = analytics?.series?.sessionsPerMonth || [];
+    const attendancePerMonth = analytics?.series?.attendancePerMonth || [];
+    const topFormations = analytics?.topFormations || [];
+
+    const attendancePct = useMemo(() => {
+        return Math.max(0, Math.min(1, Number(attendance.attendanceRate || 0)));
+    }, [attendance.attendanceRate]);
+
+    const progressDashOffset = useMemo(() => {
+        const circumference = 2 * Math.PI * 54;
+        return circumference * (1 - attendancePct);
+    }, [attendancePct]);
+
+    const attendanceByStatusChartData = useMemo(() => {
+        const items = [
+            { name: t('presence.status.present'), value: attendance.byStatus.present || 0, color: '#48bb78' },
+            { name: t('presence.status.absent'), value: attendance.byStatus.absent || 0, color: '#e53e3e' },
+            { name: t('presence.status.retard'), value: attendance.byStatus.retard || 0, color: '#f6ad55' },
+            { name: t('presence.status.justifie'), value: attendance.byStatus.justifie || 0, color: '#4299e1' },
+        ];
+        return items.filter((x) => x.value > 0);
+    }, [attendance.byStatus.absent, attendance.byStatus.justifie, attendance.byStatus.present, attendance.byStatus.retard, t]);
+
+    const topFormationsChartData = useMemo(() => {
+        return (topFormations || []).map((f) => ({
+            name: f.formationName || '—',
+            attendanceRate: Number(f.attendanceRate || 0),
+            total: Number(f.total || 0),
+        }));
+    }, [topFormations]);
+
+    const sessionsChart = (
+        <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={sessionsPerMonth} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                <Bar name={t('nav.sessions')} dataKey="sessions" fill="#4169e1" radius={[6, 6, 0, 0]} />
+            </BarChart>
+        </ResponsiveContainer>
+    );
+
+    const attendanceByStatusChart = (
+        <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+                <Tooltip />
+                <Legend />
+                <Pie
+                    dataKey="value"
+                    nameKey="name"
+                    data={attendanceByStatusChartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label
+                    fill="#4169e1"
+                >
+                    {attendanceByStatusChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                </Pie>
+            </PieChart>
+        </ResponsiveContainer>
+    );
+
+    const topFormationsChart = (
+        <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={topFormationsChartData} layout="vertical" margin={{ top: 10, right: 20, bottom: 0, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" domain={[0, 1]} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
+                <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(v, n) => (n === 'attendanceRate' ? `${Math.round(Number(v) * 100)}%` : v)} />
+                <Legend />
+                <Bar name={t('dashboard.attendanceRate')} dataKey="attendanceRate" fill="#48bb78" radius={[0, 6, 6, 0]} />
+            </BarChart>
+        </ResponsiveContainer>
+    );
+
+    const attendanceRateChart = (
+        <div className="chart-recharts-container">
+            <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={attendancePerMonth} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                    <YAxis tickFormatter={(v) => `${Math.round(v * 100)}%`} domain={[0, 1]} />
+                    <Tooltip formatter={(v) => `${Math.round(Number(v) * 100)}%`} />
+                    <Legend />
+                    <Bar name={t('dashboard.attendanceRate')} dataKey="attendanceRate" fill="#2c3e50" radius={[6, 6, 0, 0]} />
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const response = await dashboardAPI.getStats();
-                setStats(response.data);
+                setLoadNotice('');
+                const response = await dashboardAPI.getAnalytics();
+                setAnalytics(response.data);
             } catch (error) {
-                console.error('Error fetching dashboard stats:', error);
+                const status = error?.response?.status;
+                const serverMsg = error?.response?.data?.message;
+                console.error('Error fetching dashboard analytics:', status, serverMsg || error);
+
+                // Fallback: if analytics endpoint is missing/undeployed, at least show basic counts.
+                try {
+                    const basic = await dashboardAPI.getStats();
+                    const d = basic?.data || {};
+                    setAnalytics({
+                        cards: {
+                            studentsTotal: d.students || 0,
+                            studentsActive: 0,
+                            formationsTotal: d.activeFormations || 0,
+                            formationsActive: d.activeFormations || 0,
+                            sessionsToday: d.sessionsToday || 0,
+                            sessionsNext7Days: 0,
+                            sessionsThisMonth: 0,
+                            certificationsTotal: d.certifications || 0,
+                        },
+                        attendance: {
+                            byStatus: { present: 0, absent: 0, retard: 0, justifie: 0 },
+                            total: 0,
+                            presentLike: 0,
+                            attendanceRate: 0,
+                        },
+                        series: { sessionsPerMonth: [], attendancePerMonth: [] },
+                        topFormations: [],
+                        meta: { generatedAt: new Date().toISOString(), fallback: true },
+                    });
+                    setLoadNotice(t('dashboard.analyticsUnavailable'));
+                } catch (fallbackError) {
+                    console.error('Error fetching dashboard basic stats:', fallbackError);
+                    setLoadNotice(t('dashboard.loadError'));
+                }
             } finally {
                 setLoading(false);
             }
@@ -53,6 +224,13 @@ const Dashboard = () => {
             <div className="dashboard-grid">
                 {/* Left Column - Stats and Charts */}
                 <div className="dashboard-column-main">
+                    {!!loadNotice && (
+                        <Card className="statistics-card" style={{ padding: '12px 16px' }}>
+                            <div style={{ fontSize: 13, opacity: 0.85 }}>
+                                {loadNotice}
+                            </div>
+                        </Card>
+                    )}
                     {/* Top Stats Cards */}
                     <div className="stats-container">
                         <div className="stat-card-wrapper">
@@ -69,8 +247,8 @@ const Dashboard = () => {
                                     <div className="stat-info">
                                         <p className="stat-label">{t('dashboard.totalStudents')}</p>
                                         <div className="stat-value-row">
-                                            <span className="stat-value">{loading ? '...' : stats.students.toLocaleString()}</span>
-                                            <span className="stat-change positive">↑ 12.5%</span>
+                                            <span className="stat-value">{loading ? '...' : Number(cards.studentsTotal || 0).toLocaleString()}</span>
+                                            <span className="stat-change positive">{t('common.active')}: {Number(cards.studentsActive || 0).toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -88,8 +266,8 @@ const Dashboard = () => {
                                     <div className="stat-info">
                                         <p className="stat-label">{t('dashboard.activeFormations')}</p>
                                         <div className="stat-value-row">
-                                            <span className="stat-value">{loading ? '...' : stats.activeFormations.toLocaleString()}</span>
-                                            <span className="stat-change positive">↑ 8.2%</span>
+                                            <span className="stat-value">{loading ? '...' : Number(cards.formationsActive || 0).toLocaleString()}</span>
+                                            <span className="stat-change positive">{t('dashboard.total')}: {Number(cards.formationsTotal || 0).toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -110,8 +288,8 @@ const Dashboard = () => {
                                     <div className="stat-info">
                                         <p className="stat-label">{t('dashboard.sessionsToday')}</p>
                                         <div className="stat-value-row">
-                                            <span className="stat-value">{loading ? '...' : stats.sessionsToday}</span>
-                                            <span className="stat-change negative">↓ 3.1%</span>
+                                            <span className="stat-value">{loading ? '...' : Number(cards.sessionsToday || 0).toLocaleString()}</span>
+                                            <span className="stat-change positive">{t('dashboard.next7')}: {Number(cards.sessionsNext7Days || 0).toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -129,8 +307,8 @@ const Dashboard = () => {
                                     <div className="stat-info">
                                         <p className="stat-label">{t('certification.title')}</p>
                                         <div className="stat-value-row">
-                                            <span className="stat-value">{loading ? '...' : stats.certifications}</span>
-                                            <span className="stat-change positive">↑ 5.4%</span>
+                                            <span className="stat-value">{loading ? '...' : Number(cards.certificationsTotal || 0).toLocaleString()}</span>
+                                            <span className="stat-change positive">{t('dashboard.thisMonth')}: {Number(cards.sessionsThisMonth || 0).toLocaleString()} {t('nav.sessions')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -145,21 +323,34 @@ const Dashboard = () => {
                                 <h3 className="card-title">{t('dashboard.chartTitle')}</h3>
                                 <button className="card-menu-btn">⋯</button>
                             </div>
-                            <div className="chart-placeholder">
-                                <div className="bar-chart">
-                                    <div className="bar" style={{ height: '40%' }}></div>
-                                    <div className="bar" style={{ height: '60%' }}></div>
-                                    <div className="bar" style={{ height: '45%' }}></div>
-                                    <div className="bar" style={{ height: '75%' }}></div>
-                                    <div className="bar" style={{ height: '50%' }}></div>
-                                    <div className="bar" style={{ height: '65%' }}></div>
-                                    <div className="bar" style={{ height: '55%' }}></div>
-                                    <div className="bar" style={{ height: '35%' }}></div>
-                                    <div className="bar" style={{ height: '70%' }}></div>
-                                    <div className="bar" style={{ height: '80%' }}></div>
-                                    <div className="bar" style={{ height: '62%' }}></div>
-                                    <div className="bar" style={{ height: '40%' }}></div>
-                                </div>
+                            <div className="chart-recharts-container">
+                                <ChartState loading={loading} loadingLabel={t('common.loading')} hasData={sessionsPerMonth.length > 0} emptyLabel={t('common.noData')}>
+                                    {sessionsChart}
+                                </ChartState>
+                            </div>
+                        </Card>
+
+                        <Card className="chart-card">
+                            <div className="card-header">
+                                <h3 className="card-title">{t('dashboard.attendanceByStatus')}</h3>
+                                <button className="card-menu-btn">⋯</button>
+                            </div>
+                            <div className="chart-recharts-container">
+                                <ChartState loading={loading} loadingLabel={t('common.loading')} hasData={attendance.total > 0} emptyLabel={t('common.noData')}>
+                                    {attendanceByStatusChart}
+                                </ChartState>
+                            </div>
+                        </Card>
+
+                        <Card className="chart-card">
+                            <div className="card-header">
+                                <h3 className="card-title">{t('dashboard.topFormations')}</h3>
+                                <button className="card-menu-btn">⋯</button>
+                            </div>
+                            <div className="chart-recharts-container">
+                                <ChartState loading={loading} loadingLabel={t('common.loading')} hasData={topFormationsChartData.length > 0} emptyLabel={t('common.noData')}>
+                                    {topFormationsChart}
+                                </ChartState>
                             </div>
                         </Card>
                     </div>
@@ -176,7 +367,9 @@ const Dashboard = () => {
                             </div>
                         </div>
                         <div className="statistics-content">
-                            <p className="no-data">{t('common.noData')}</p>
+                            <ChartState loading={loading} loadingLabel={t('common.loading')} hasData={attendancePerMonth.length > 0} emptyLabel={t('common.noData')}>
+                                {attendanceRateChart}
+                            </ChartState>
                         </div>
                     </Card>
                 </div>
@@ -186,35 +379,49 @@ const Dashboard = () => {
                     {/* Monthly Target Card */}
                     <Card className="target-card">
                         <div className="target-header">
-                            <h3 className="card-title">{t('dashboard.monthlyGoal')}</h3>
+                            <h3 className="card-title">{t('dashboard.attendance30d')}</h3>
                             <button className="card-menu-btn">⋯</button>
                         </div>
                         <div className="circular-progress">
                             <svg viewBox="0 0 120 120" className="progress-circle">
+                                <defs>
+                                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stopColor="#48bb78" />
+                                        <stop offset="100%" stopColor="#4169e1" />
+                                    </linearGradient>
+                                </defs>
                                 <circle cx="60" cy="60" r="54" className="progress-bg"></circle>
-                                <circle cx="60" cy="60" r="54" className="progress-fill" style={{ strokeDashoffset: '85' }}></circle>
+                                <circle
+                                    cx="60"
+                                    cy="60"
+                                    r="54"
+                                    className="progress-fill"
+                                    style={{
+                                        strokeDashoffset: progressDashOffset,
+                                    }}
+                                ></circle>
                             </svg>
                             <div className="progress-text">
-                                <span className="progress-value">75.55%</span>
-                                <span className="progress-increase">+10%</span>
+                                <span className="progress-value">{loading ? '...' : `${Math.round(Number(attendance.attendanceRate || 0) * 100)}%`}</span>
+                                <span className="progress-increase">{loading ? '' : `${Number(attendance.presentLike || 0).toLocaleString()}/${Number(attendance.total || 0).toLocaleString()}`}</span>
                             </div>
                         </div>
-                        <p className="target-message">{t('dashboard.goalMessage')}</p>
+                        <p className="target-message">{t('dashboard.attendanceSubtitle')}</p>
                         <div className="target-stats">
                             <div className="target-stat-item">
-                                <span className="target-stat-label">{t('dashboard.target')}</span>
-                                <span className="target-stat-value">200K</span>
-                                <span className="target-stat-change">↓</span>
+                                <span className="target-stat-label">{t('presence.status.present')}</span>
+                                <span className="target-stat-value">{loading ? '...' : Number(attendance.byStatus.present || 0).toLocaleString()}</span>
+                                <span className="target-stat-change"> </span>
                             </div>
                             <div className="target-stat-item">
-                                <span className="target-stat-label">{t('dashboard.revenue')}</span>
-                                <span className="target-stat-value">200K</span>
-                                <span className="target-stat-change">↑</span>
+                                <span className="target-stat-label">{t('presence.status.absent')}</span>
+                                <span className="target-stat-value absent">{loading ? '...' : Number(attendance.byStatus.absent || 0).toLocaleString()}</span>
+                                <span className="target-stat-change"> </span>
                             </div>
                             <div className="target-stat-item">
-                                <span className="target-stat-label">{t('dashboard.today')}</span>
-                                <span className="target-stat-value">200K</span>
-                                <span className="target-stat-change">↑</span>
+                                <span className="target-stat-label">{t('presence.status.retard')}</span>
+                                <span className="target-stat-value">{loading ? '...' : Number(attendance.byStatus.retard || 0).toLocaleString()}</span>
+                                <span className="target-stat-change"> </span>
                             </div>
                         </div>
                     </Card>
@@ -259,6 +466,8 @@ const Dashboard = () => {
                             </div>
                         </Card>
                     )}
+
+                    <CertificationPredictorForm />
                 </div>
             </div>
         </div>

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDashboardStats } from '../controllers/dashboardController.js';
+import { getDashboardAnalytics, getDashboardStats } from '../controllers/dashboardController.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -10,5 +10,8 @@ const router = express.Router();
 
 // Get stats
 router.get('/stats', protect, getDashboardStats);
+
+// Get analytics for charts
+router.get('/analytics', protect, getDashboardAnalytics);
 
 export default router;

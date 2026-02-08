@@ -11,4 +11,12 @@ export const dashboardAPI = {
         const response = await api.get('/dashboard/stats');
         return response.data;
     },
+
+    /**
+     * Get real dashboard analytics (cards + charts)
+     */
+    getAnalytics: async () => {
+        const response = await api.get('/dashboard/analytics');
+        return response.data;
+    },
 };

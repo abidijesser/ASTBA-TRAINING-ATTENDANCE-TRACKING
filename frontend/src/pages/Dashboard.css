@@ -9,7 +9,7 @@
 
 .dashboard {
     width: 100%;
-    padding: 2rem;
+    padding: 1rem;
     background: #f8f9fa;
     min-height: 100vh;
 }
@@ -225,6 +225,16 @@
     border-radius: 8px;
 }
 
+.chart-recharts-container {
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    background: #fafbfc;
+    border-radius: 8px;
+}
+
 .bar-chart {
     display: flex;
     align-items: flex-end;
@@ -406,6 +416,10 @@
     font-weight: 700;
     color: #1a202c;
     margin-bottom: 0.25rem;
+}
+
+.target-stat-value.absent {
+    color: #e53e3e;
 }
 
 .target-stat-change {

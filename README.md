@@ -197,6 +197,60 @@ curl -X POST http://localhost:5000/api/auth/register \
     "email": "john@example.com",
     "password": "password123"
   }'
+
+## 🤖 ML (Flask) Certification Prediction
+
+This repo also contains a small **Flask** API that loads the trained artifacts stored in `backend/certification_model.pkl` and `backend/scaler.pkl` and serves a prediction endpoint (no separate microservice for the model inside Flask).
+
+### Install (Windows)
+
+From `backend/`:
+
+```powershell
+py -3.11 -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+### Run
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python ml_server.py
+```
+
+Default URL: `http://localhost:8000`
+
+### Endpoints
+
+- `GET /api/health`
+- `GET /api/ml/schema`
+- `POST /api/ml/predict-certification`
+
+Example request:
+
+```bash
+curl -X POST http://localhost:8000/api/ml/predict-certification \
+  -H "Content-Type: application/json" \
+  -d '{
+    "attendance_rate": 0.92,
+    "missed_sessions": 2,
+    "levels_completed": 5,
+    "avg_quiz_score": 78,
+    "engagement_score": 0.81
+  }'
+```
+
+### Optional environment variables
+
+- `ML_MODEL_PATH` (default: `backend/certification_model.pkl`)
+- `ML_SCALER_PATH` (default: `backend/scaler.pkl`)
+- `ML_PORT` (default: `8000`)
+- `ML_THRESHOLD` (default: `0.5`)
+- `ML_ATTENDANCE_RATE_MODE` = `auto` | `fraction` | `percent` (default: `auto`)
+- `ML_CORS_ORIGINS` (comma-separated origins; default: `CLIENT_URL` or `http://localhost:5173`)
 ```
 
 **Login**
