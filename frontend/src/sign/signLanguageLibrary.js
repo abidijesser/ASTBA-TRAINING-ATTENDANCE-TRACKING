@@ -323,11 +323,27 @@ export function getSignEntryForPhrase(phrase) {
   // 4) Heuristic aliases for frequent UI headers
   const aliasMap = {
     description: 'Description',
+    remark: 'Description',
+    remarks: 'Description',
+    commentaire: 'Description',
+    commentaires: 'Description',
+    note: 'Description',
+    notes: 'Description',
     duration: 'Duration',
     'start date': 'Start Date',
     startdate: 'Start Date',
     'monthly goal': 'Monthly Goal',
     'student list': 'Student List',
+    training: 'Formations',
+    trainings: 'Formations',
+    formation: 'Formations',
+    formations: 'Formations',
+    attendance: 'Sessions',
+    'attendance detail': 'Sessions',
+    'attendance details': 'Sessions',
+    presence: 'Sessions',
+    absences: 'Sessions',
+    absence: 'Sessions',
   };
   const aliasKey = aliasMap[wanted.replace(/\s+/g, ' ').trim()];
   if (aliasKey && lib[aliasKey]) return { phrase: aliasKey, ...lib[aliasKey] };
@@ -342,6 +358,73 @@ export function hasSignVideoForPhrase(phrase) {
 export async function searchWikimediaCommonsVideos(query, { limit = 12 } = {}) {
   const q = normalizePhraseExact(query);
   if (!q) return [];
+
+  const buildQueryCandidates = (text) => {
+    const raw = normalizePhraseExact(text);
+    if (!raw) return [];
+    const cleaned = raw
+      .replace(/[“”«»]/g, ' ')
+      .replace(/[_\-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const lower = cleaned.toLowerCase();
+    const candidates = [cleaned];
+
+    // Drop common suffix words like "details" to broaden search.
+    if (lower.includes(' details')) candidates.push(cleaned.replace(/\s+details$/i, '').trim());
+    if (lower.includes(' detail')) candidates.push(cleaned.replace(/\s+detail$/i, '').trim());
+
+    // Simple EN→FR expansions for UI words (helps find LSF/FSL clips).
+    const synonymMap = {
+      training: ['formation', 'formations'],
+      remark: ['remarque', 'commentaire', 'note'],
+      remarks: ['remarques', 'commentaires', 'notes'],
+      attendance: ['présence', 'presence'],
+      'attendance details': ['présence', 'presence'],
+    };
+    for (const [k, extras] of Object.entries(synonymMap)) {
+      if (lower === k) candidates.push(...extras);
+    }
+
+    // If the phrase is multi-word, also try each significant token.
+    const tokens = cleaned
+      .split(' ')
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .filter((t) => t.length >= 4);
+    candidates.push(...tokens);
+
+    // Unique + limit to keep the query short.
+    const uniq = [];
+    const seen = new Set();
+    for (const c of candidates) {
+      const s = String(c || '').trim();
+      if (!s) continue;
+      const key = s.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      uniq.push(s);
+      if (uniq.length >= 6) break;
+    }
+    return uniq;
+  };
+
+  const quoteIfNeeded = (s) => {
+    const v = String(s || '').replace(/"/g, '').trim();
+    if (!v) return '';
+    return /\s/.test(v) ? `"${v}"` : v;
+  };
+
+  const candidates = buildQueryCandidates(q);
+  const gsrsearch = candidates
+    .map((c) => {
+      const t = quoteIfNeeded(c);
+      // Bias towards LSF/FSL content but still allow other results.
+      return `(${t} (fsl) OR ${t} LSF OR ${t} "langue des signes")`;
+    })
+    .join(' OR ');
+
   const url = new URL('https://commons.wikimedia.org/w/api.php');
   url.searchParams.set('action', 'query');
   url.searchParams.set('format', 'json');
@@ -349,8 +432,7 @@ export async function searchWikimediaCommonsVideos(query, { limit = 12 } = {}) {
   url.searchParams.set('generator', 'search');
   url.searchParams.set('gsrnamespace', '6');
   url.searchParams.set('gsrlimit', String(Math.max(1, Math.min(25, limit))));
-  // Bias towards LSF/fsl content but still allow other results
-  url.searchParams.set('gsrsearch', `${q} (fsl) OR ${q} LSF OR ${q} "langue des signes"`);
+  url.searchParams.set('gsrsearch', gsrsearch || `${q} (fsl) OR ${q} LSF OR ${q} "langue des signes"`);
   url.searchParams.set('prop', 'imageinfo');
   url.searchParams.set('iiprop', 'url');
 
@@ -378,4 +460,17 @@ export async function searchWikimediaCommonsVideos(query, { limit = 12 } = {}) {
   } catch {
     return [];
   }
+}
+
+export function getGenericFallbackEntryForPhrase(phrase) {
+  const p = normalizePhraseExact(phrase);
+  // Deterministic per phrase so different words don’t all show the same fallback.
+  const pool = ['Langue', 'Capter des mots', 'Quand ?', 'Formations', 'Élèves'];
+  const base = p ? p.toLowerCase() : 'langue';
+  let hash = 0;
+  for (let i = 0; i < base.length; i += 1) {
+    hash = (hash * 31 + base.charCodeAt(i)) >>> 0;
+  }
+  const idx = pool.length ? hash % pool.length : 0;
+  return getSignEntryForPhrase(pool[idx]) || getSignEntryForPhrase('Langue');
 }

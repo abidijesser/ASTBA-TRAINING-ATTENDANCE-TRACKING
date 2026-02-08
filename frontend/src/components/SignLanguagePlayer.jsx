@@ -3,6 +3,7 @@ import Modal from './ui/Modal';
 import { usePreferences } from '../context/PreferenceContext';
 import {
   getSignEntryForPhrase,
+  getGenericFallbackEntryForPhrase,
   normalizePhraseExact,
   searchWikimediaCommonsVideos,
   upsertCustomSignEntry,
@@ -22,7 +23,7 @@ function SignLanguagePlayer() {
   const searchCacheRef = useRef(new Map());
 
   const entry = useMemo(() => getSignEntryForPhrase(phrase), [phrase]);
-  const genericFallbackEntry = useMemo(() => getSignEntryForPhrase('Langue'), []);
+  const genericFallbackEntry = useMemo(() => getGenericFallbackEntryForPhrase(phrase), [phrase]);
   const effectiveEntry = entry || autoEntry || genericFallbackEntry;
   const videoUrl = effectiveEntry?.videoUrl || '';
 
