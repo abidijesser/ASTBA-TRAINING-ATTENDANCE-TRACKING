@@ -1,33 +1,33 @@
-.presence-summary {
+.student-presence-detail {
     max-width: var(--max-width);
 }
 
-.presence-summary .page-header {
+.student-presence-detail .page-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: var(--space-6);
 }
 
-.presence-summary .page-header h1 {
+.student-presence-detail .page-header h1 {
     font-size: var(--text-3xl);
     margin-bottom: var(--space-2);
 }
 
-.presence-summary .page-header p {
+.student-presence-detail .page-header p {
     color: var(--color-text-secondary);
 }
 
-.presence-summary .search-card {
+.student-presence-detail .search-card {
     margin-bottom: var(--space-6);
 }
 
-.presence-summary .search-form {
+.student-presence-detail .search-form {
     display: flex;
     gap: var(--space-3);
 }
 
-.presence-summary .search-input {
+.student-presence-detail .search-input {
     flex: 1;
     padding: var(--space-3) var(--space-4);
     font-size: var(--text-base);
@@ -36,30 +36,30 @@
     transition: all var(--transition-fast);
 }
 
-.presence-summary .search-input:focus {
+.student-presence-detail .search-input:focus {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px var(--color-primary-lightest);
 }
 
-.presence-summary .table-container {
+.student-presence-detail .table-container {
     background: var(--color-bg-primary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     overflow: hidden;
 }
 
-.presence-summary .data-table {
+.student-presence-detail .data-table {
     width: 100%;
     border-collapse: collapse;
 }
 
-.presence-summary .data-table thead {
+.student-presence-detail .data-table thead {
     background: var(--color-bg-tertiary);
     border-bottom: 1px solid var(--color-border);
 }
 
-.presence-summary .data-table th {
+.student-presence-detail .data-table th {
     padding: var(--space-4);
     text-align: left;
     font-weight: var(--font-semibold);
@@ -69,43 +69,58 @@
     letter-spacing: 0.5px;
 }
 
-.presence-summary .data-table td {
+.student-presence-detail .data-table td {
     padding: var(--space-4);
     border-bottom: 1px solid var(--color-border);
     color: var(--color-text-secondary);
+    vertical-align: middle;
 }
 
-.presence-summary .data-table tbody tr:last-child td {
+.student-presence-detail .data-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-.presence-summary .data-table tbody tr:hover {
+.student-presence-detail .data-table tbody tr:hover {
     background: var(--color-bg-secondary);
 }
 
-.presence-summary .data-table tbody tr {
-    transition: background var(--transition-fast);
+.student-presence-detail .status-select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
 }
 
-.presence-summary .loading-state,
-.presence-summary .empty-state {
+.student-presence-detail .remark-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+}
+
+.student-presence-detail .loading-state,
+.student-presence-detail .empty-state {
     text-align: center;
     padding: var(--space-12);
     color: var(--color-text-secondary);
 }
 
 @media (max-width: 768px) {
-    .presence-summary .page-header {
+    .student-presence-detail .page-header {
         flex-direction: column;
         gap: var(--space-4);
         align-items: stretch;
     }
 
-    .presence-summary .search-form {
+    .student-presence-detail .search-form {
         flex-direction: column;
     }
 
-    .presence-summary .table-container {
+    .student-presence-detail .table-container {
         overflow-x: auto;
     }
 }

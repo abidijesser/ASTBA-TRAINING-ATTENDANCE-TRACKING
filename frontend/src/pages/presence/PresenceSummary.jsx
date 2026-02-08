@@ -84,7 +84,13 @@ const PresenceSummary = () => {
                             const absent = Number(r?.absent || 0);
 
                             return (
-                                <tr key={String(r?.eleve_id || `${r?.nom}-${r?.prenom}`)}>
+                                <tr
+                                    key={String(r?.eleve_id || `${r?.nom}-${r?.prenom}`)}
+                                    style={{ cursor: r?.eleve_id ? 'pointer' : 'default' }}
+                                    onClick={() => {
+                                        if (r?.eleve_id) navigate(`/presence/${r.eleve_id}`);
+                                    }}
+                                >
                                     <td>{r?.nom || '-'}</td>
                                     <td>{r?.prenom || '-'}</td>
                                     <td>{present}/{total}</td>

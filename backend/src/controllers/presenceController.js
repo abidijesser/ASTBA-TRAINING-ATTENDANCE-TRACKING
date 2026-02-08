@@ -119,6 +119,29 @@ export const updatePresence = async (req, res, next) => {
             });
         }
 
+        // Access check: formateurs can only update attendance for their assigned formations
+        if (req.user.role === 'formateur') {
+            await presence.populate({
+                path: 'seance_id',
+                populate: {
+                    path: 'niveau_id',
+                    populate: {
+                        path: 'formation_id',
+                        select: 'responsable_id',
+                    },
+                },
+            });
+
+            const responsableId = presence?.seance_id?.niveau_id?.formation_id?.responsable_id;
+            const isAssigned = responsableId && responsableId.toString() === req.user._id.toString();
+            if (!isAssigned) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Accès refusé. Vous n'êtes pas assigné à cette formation.",
+                });
+            }
+        }
+
         presence.statut = statut || presence.statut;
         if (remarques !== undefined) {
             presence.remarques = remarques;
