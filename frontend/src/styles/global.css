@@ -325,6 +325,47 @@ select {
     --color-primary-dark: #00a3cc;
 }
 
+/* Accessibility: Colorblind-friendly mode
+   - Uses a widely adopted colorblind-safe palette inspired by Okabe-Ito.
+   - Works by overriding the existing design tokens (CSS variables) so most UI updates automatically.
+   - Toggle by adding/removing the `colorblind-friendly` class on the app root (see App.jsx).
+*/
+.colorblind-friendly {
+    /* Keep neutral surfaces; focus on distinct accent colors */
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f8fafc;
+    --color-bg-tertiary: #f1f5f9;
+    --color-bg-hover: #eaf0f6;
+
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #334155;
+    --color-text-tertiary: #64748b;
+    --color-text-white: #ffffff;
+
+    --color-border: #d0d7de;
+    --color-border-light: #e6edf3;
+    --color-border-dark: #b6c2cf;
+
+    /* Accents: Okabe-Ito-inspired (distinct under common CVD types) */
+    --color-primary: #0072B2;         /* blue */
+    --color-primary-dark: #005A8D;
+    --color-primary-light: #56B4E9;   /* sky blue */
+    --color-primary-lightest: #D7EFFB;
+
+    --color-success: #009E73;         /* bluish green */
+    --color-success-light: #C7F1E4;
+
+    /* Warning: use orange (yellow can fail contrast on white) */
+    --color-warning: #E69F00;         /* orange */
+    --color-warning-light: #FFF0C7;
+
+    --color-danger: #D55E00;          /* vermillion */
+    --color-danger-light: #FFE0CF;
+
+    --color-info: #56B4E9;            /* sky blue */
+    --color-info-light: #D7EFFB;
+}
+
 /* Mobile-friendly bigger touch targets */
 .touch-targets button,
 .touch-targets .assistant-btn,

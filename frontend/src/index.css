@@ -10,8 +10,9 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #ffffff;
-  color: #333;
+  /* Use design tokens so global themes (high-contrast / colorblind-friendly) work everywhere */
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   line-height: 1.6;
 }
 
@@ -30,7 +31,7 @@ h6 {
 }
 
 a {
-  color: #3498db;
+  color: var(--color-primary);
   text-decoration: none;
 }
 
@@ -44,7 +45,7 @@ a:hover {
 
 /* Visible focus styles for keyboard navigation */
 *:focus {
-  outline: 2px solid #3498db;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -56,9 +57,9 @@ select:focus,
 textarea:focus,
 [role="button"]:focus,
 [tabindex]:focus {
-  outline: 3px solid #2980b9;
+  outline: 3px solid var(--color-primary-dark);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
 /* Remove default focus for mouse users but keep for keyboard */
@@ -68,9 +69,9 @@ textarea:focus,
 }
 
 *:focus-visible {
-  outline: 3px solid #2980b9;
+  outline: 3px solid var(--color-primary-dark);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
 /* Skip to main content link (for screen readers and keyboard navigation) */
@@ -79,7 +80,7 @@ textarea:focus,
   left: -9999px;
   z-index: 999;
   padding: 1rem 2rem;
-  background-color: #2980b9;
+  background-color: var(--color-primary-dark);
   color: white;
   text-decoration: none;
   font-weight: bold;

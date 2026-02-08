@@ -217,6 +217,15 @@ const SessionDetail = () => {
         if (!cameraOn) return;
         cameraStartRef.current = performance.now?.() || Date.now();
         let stream;
+        const primaryColor = () => {
+            try {
+                return getComputedStyle(document.documentElement)
+                    .getPropertyValue('--color-primary')
+                    .trim() || '#3B82F6';
+            } catch {
+                return '#3B82F6';
+            }
+        };
         const onResults = (results) => {
             const canvas = canvasRef.current;
             const ctx = canvas?.getContext('2d');
@@ -226,7 +235,7 @@ const SessionDetail = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const lm = results.multiHandLandmarks?.[0];
             if (lm) {
-                ctx.fillStyle = '#3B82F6';
+                ctx.fillStyle = primaryColor();
                 lm.forEach((p) => ctx.fillRect(p.x * canvas.width, p.y * canvas.height, 4, 4));
                 // Helper: finger extended if tip above pip
                 const extended = [8, 12, 16, 20].reduce((acc, tipIdx) => {

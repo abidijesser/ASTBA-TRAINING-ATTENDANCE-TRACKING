@@ -4,7 +4,9 @@ import axios from 'axios';
  * Configured Axios instance for API calls
  */
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    // Dev: use Vite proxy via relative '/api'
+    // Prod: set VITE_API_URL (e.g. https://api.example.com/api)
+    baseURL: import.meta.env.VITE_API_URL || '/api',
     withCredentials: true, // Send cookies with requests
     headers: {
         'Content-Type': 'application/json',
@@ -41,7 +43,7 @@ api.interceptors.response.use(
 
             if (status === 401) {
                 // Unauthorized - redirect to login
-                window.location.href = '/login';
+                globalThis.location.href = '/login';
             }
         } else if (error.request) {
             // Request made but no response

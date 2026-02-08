@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DialogProvider } from './context/DialogContext';
@@ -32,9 +33,24 @@ import Layout from './components/Layout';
 function AppRoot() {
     const { prefs } = usePreferences();
 
+    // Apply global mode classes to <html> so CSS variables affect body and all descendants.
+    // This is important because CSS variables set on a wrapper div do NOT influence `body { ... }`.
+    useEffect(() => {
+        const root = document.documentElement;
+        root.classList.toggle('high-contrast', !!prefs.accessibilityMode);
+        root.classList.toggle('colorblind-friendly', !!prefs.colorblindMode);
+        root.classList.toggle('touch-targets', !!prefs.mobileMode);
+        return () => {
+            root.classList.remove('high-contrast', 'colorblind-friendly', 'touch-targets');
+        };
+    }, [prefs.accessibilityMode, prefs.colorblindMode, prefs.mobileMode]);
+
     // Apply global classes for accessibility/mobile modes
     const classes = [
         prefs.accessibilityMode ? 'high-contrast' : '',
+        // Colorblind-friendly palette (Okabe-Ito inspired).
+        // Toggle by setting prefs.colorblindMode.
+        prefs.colorblindMode ? 'colorblind-friendly' : '',
         prefs.mobileMode ? 'touch-targets' : '',
     ]
         .filter(Boolean)

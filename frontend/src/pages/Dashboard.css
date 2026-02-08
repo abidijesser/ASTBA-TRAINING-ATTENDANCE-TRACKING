@@ -10,7 +10,7 @@
 .dashboard {
     width: 100%;
     padding: 1rem;
-    background: #f8f9fa;
+    background: var(--color-bg-secondary);
     min-height: 100vh;
 }
 
@@ -34,20 +34,20 @@
 .page-title {
     font-size: clamp(2rem, 5vw, 2.5rem);
     font-weight: 700;
-    color: #1a202c;
+    color: var(--color-text-primary);
     margin: 0;
     letter-spacing: -0.02em;
 }
 
 .page-subtitle {
     font-size: 1rem;
-    color: #718096;
+    color: var(--color-text-secondary);
     margin: 0;
     font-weight: 500;
 }
 
 .user-greeting {
-    color: #4169e1;
+    color: var(--color-primary);
     font-weight: 700;
 }
 
@@ -84,11 +84,11 @@
 /* Stat Cards */
 .stat-card {
     padding: 1.5rem;
-    background: white;
+    background: var(--color-bg-primary);
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--color-border);
 }
 
 .stat-card:hover {
@@ -110,23 +110,23 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: white;
+    color: var(--color-text-white);
 }
 
 .stat-card-blue .stat-card-icon {
-    background: linear-gradient(135deg, #4169e1, #316cdb);
+    background: var(--color-primary);
 }
 
 .stat-card-green .stat-card-icon {
-    background: linear-gradient(135deg, #48bb78, #38a169);
+    background: var(--color-success);
 }
 
 .stat-card-orange .stat-card-icon {
-    background: linear-gradient(135deg, #f6ad55, #ed8936);
+    background: var(--color-warning);
 }
 
 .stat-card-navy .stat-card-icon {
-    background: linear-gradient(135deg, #2c3e50, #34495e);
+    background: var(--color-text-primary);
 }
 
 .stat-info {
@@ -135,7 +135,7 @@
 
 .stat-label {
     font-size: 0.875rem;
-    color: #718096;
+    color: var(--color-text-secondary);
     margin: 0 0 0.5rem 0;
     font-weight: 500;
 }
@@ -149,7 +149,7 @@
 .stat-value {
     font-size: clamp(1.5rem, 4vw, 2rem);
     font-weight: 700;
-    color: #1a202c;
+    color: var(--color-text-primary);
     margin: 0;
 }
 
@@ -161,13 +161,13 @@
 }
 
 .stat-change.positive {
-    color: #22863a;
-    background: #f0f7e4;
+    color: var(--color-success);
+    background: var(--color-success-light);
 }
 
 .stat-change.negative {
-    color: #cb2431;
-    background: #ffeef0;
+    color: var(--color-danger);
+    background: var(--color-danger-light);
 }
 
 /* Charts Grid */
@@ -180,9 +180,9 @@
 /* Chart Card */
 .chart-card {
     padding: 2rem;
-    background: white;
+    background: var(--color-bg-primary);
     border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--color-border);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
@@ -192,13 +192,13 @@
     align-items: center;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid #edf2f7;
+    border-bottom: 1px solid var(--color-border-light);
 }
 
 .card-title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #1a202c;
+    color: var(--color-text-primary);
     margin: 0;
 }
 
@@ -207,12 +207,12 @@
     border: none;
     font-size: 1.25rem;
     cursor: pointer;
-    color: #a0aec0;
+    color: var(--color-text-tertiary);
     transition: color 0.2s;
 }
 
 .card-menu-btn:hover {
-    color: #4a5568;
+    color: var(--color-text-secondary);
 }
 
 .chart-placeholder {

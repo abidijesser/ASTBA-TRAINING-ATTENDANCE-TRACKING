@@ -186,6 +186,15 @@ function AvatarAssistant() {
     listenStartRef.current = performance.now?.() || Date.now();
     okFramesRef.current = 0;
     let stream;
+    const primaryColor = () => {
+      try {
+        return getComputedStyle(document.documentElement)
+          .getPropertyValue('--color-primary')
+          .trim() || '#3B82F6';
+      } catch {
+        return '#3B82F6';
+      }
+    };
     const onResults = (results) => {
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
@@ -195,7 +204,7 @@ function AvatarAssistant() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const lm = results.multiHandLandmarks?.[0];
       if (lm) {
-        ctx.fillStyle = '#3B82F6';
+        ctx.fillStyle = primaryColor();
         lm.forEach((p) => ctx.fillRect(p.x * canvas.width, p.y * canvas.height, 4, 4));
         const thumbTip = lm[4];
         const indexTip = lm[8];
@@ -377,7 +386,9 @@ function AvatarAssistant() {
           <button
             className="assistant-profile-btn"
             onClick={() => {
-              setPrefs((p) => ({ ...p, accessibilityMode: false, voiceEnabled: true }));
+              // Toggle colorblind-friendly mode (palette designed for common CVD types).
+              // Click again (re-open assistant) to return to normal mode.
+              setPrefs((p) => ({ ...p, colorblindMode: !p.colorblindMode, voiceEnabled: true }));
               onClose();
             }}
             aria-label="Profil Malvoyant"

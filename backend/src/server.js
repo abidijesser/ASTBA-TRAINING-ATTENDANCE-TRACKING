@@ -60,14 +60,30 @@ connectDB();
  */
 
 // CORS - Allow cross-origin requests with credentials
-// CORS - Allow cross-origin requests with credentials
 app.use(
     cors({
-        origin: [
-            process.env.CLIENT_URL || 'http://localhost:5173',
-            'http://localhost:5174',
-            'http://localhost:3000'
-        ],
+        // In dev, allow localhost on any port to avoid CORS issues when Vite port changes.
+        // In prod, lock this down via CLIENT_URL.
+        origin: (origin, callback) => {
+            if (!origin) return callback(null, true);
+
+            const explicitAllowed = [
+                process.env.CLIENT_URL,
+                'http://localhost:5173',
+                'http://localhost:5174',
+                'http://localhost:5175',
+                'http://localhost:3000',
+            ].filter(Boolean);
+
+            if (explicitAllowed.includes(origin)) return callback(null, true);
+
+            const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
+            if (process.env.NODE_ENV !== 'production' && isLocalhost) {
+                return callback(null, true);
+            }
+
+            return callback(new Error(`CORS blocked for origin: ${origin}`));
+        },
         credentials: true, // Allow cookies to be sent from frontend
     })
 );

@@ -7,6 +7,9 @@ const defaultPrefs = {
   presenceQuickMode: false,
   mobileMode: false,
   accessibilityMode: false,
+  // Toggle colorblind-friendly palette across the UI.
+  // Normal mode: false, Colorblind-friendly mode: true.
+  colorblindMode: false,
   language: 'fr',
   signLanguageMode: false,
   deafMuteMode: false,
