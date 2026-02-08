@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui';
 import { dashboardAPI } from '../api/dashboard';
@@ -11,6 +12,7 @@ import './Dashboard.css';
  */
 const Dashboard = () => {
     const { user } = useAuth();
+    const { t } = useLanguage();
     const [stats, setStats] = useState({
         students: 0,
         activeFormations: 0,
@@ -41,8 +43,8 @@ const Dashboard = () => {
             <div className="dashboard-header-section">
                 <div className="header-top">
                     <div className="header-content">
-                        <h1 className="page-title">Tableau de bord</h1>
-                        <p className="page-subtitle">Bienvenue, <span className="user-greeting">{user?.prenom}</span> 👋</p>
+                        <h1 className="page-title">{t('nav.dashboard')}</h1>
+                        <p className="page-subtitle">{t('common.welcome')}, <span className="user-greeting">{user?.prenom}</span> 👋</p>
                     </div>
                 </div>
             </div>
@@ -65,7 +67,7 @@ const Dashboard = () => {
                                         </svg>
                                     </div>
                                     <div className="stat-info">
-                                        <p className="stat-label">Élèves inscrits</p>
+                                        <p className="stat-label">{t('dashboard.totalStudents')}</p>
                                         <div className="stat-value-row">
                                             <span className="stat-value">{loading ? '...' : stats.students.toLocaleString()}</span>
                                             <span className="stat-change positive">↑ 12.5%</span>
@@ -84,7 +86,7 @@ const Dashboard = () => {
                                         </svg>
                                     </div>
                                     <div className="stat-info">
-                                        <p className="stat-label">Formations actives</p>
+                                        <p className="stat-label">{t('dashboard.activeFormations')}</p>
                                         <div className="stat-value-row">
                                             <span className="stat-value">{loading ? '...' : stats.activeFormations.toLocaleString()}</span>
                                             <span className="stat-change positive">↑ 8.2%</span>
@@ -106,7 +108,7 @@ const Dashboard = () => {
                                         </svg>
                                     </div>
                                     <div className="stat-info">
-                                        <p className="stat-label">Séances aujourd'hui</p>
+                                        <p className="stat-label">{t('dashboard.sessionsToday')}</p>
                                         <div className="stat-value-row">
                                             <span className="stat-value">{loading ? '...' : stats.sessionsToday}</span>
                                             <span className="stat-change negative">↓ 3.1%</span>
@@ -125,7 +127,7 @@ const Dashboard = () => {
                                         </svg>
                                     </div>
                                     <div className="stat-info">
-                                        <p className="stat-label">Certifications</p>
+                                        <p className="stat-label">{t('certification.title')}</p>
                                         <div className="stat-value-row">
                                             <span className="stat-value">{loading ? '...' : stats.certifications}</span>
                                             <span className="stat-change positive">↑ 5.4%</span>
@@ -140,23 +142,23 @@ const Dashboard = () => {
                     <div className="charts-grid">
                         <Card className="chart-card">
                             <div className="card-header">
-                                <h3 className="card-title">Formations par mois</h3>
+                                <h3 className="card-title">{t('dashboard.chartTitle')}</h3>
                                 <button className="card-menu-btn">⋯</button>
                             </div>
                             <div className="chart-placeholder">
                                 <div className="bar-chart">
-                                    <div className="bar" style={{height: '40%'}}></div>
-                                    <div className="bar" style={{height: '60%'}}></div>
-                                    <div className="bar" style={{height: '45%'}}></div>
-                                    <div className="bar" style={{height: '75%'}}></div>
-                                    <div className="bar" style={{height: '50%'}}></div>
-                                    <div className="bar" style={{height: '65%'}}></div>
-                                    <div className="bar" style={{height: '55%'}}></div>
-                                    <div className="bar" style={{height: '35%'}}></div>
-                                    <div className="bar" style={{height: '70%'}}></div>
-                                    <div className="bar" style={{height: '80%'}}></div>
-                                    <div className="bar" style={{height: '62%'}}></div>
-                                    <div className="bar" style={{height: '40%'}}></div>
+                                    <div className="bar" style={{ height: '40%' }}></div>
+                                    <div className="bar" style={{ height: '60%' }}></div>
+                                    <div className="bar" style={{ height: '45%' }}></div>
+                                    <div className="bar" style={{ height: '75%' }}></div>
+                                    <div className="bar" style={{ height: '50%' }}></div>
+                                    <div className="bar" style={{ height: '65%' }}></div>
+                                    <div className="bar" style={{ height: '55%' }}></div>
+                                    <div className="bar" style={{ height: '35%' }}></div>
+                                    <div className="bar" style={{ height: '70%' }}></div>
+                                    <div className="bar" style={{ height: '80%' }}></div>
+                                    <div className="bar" style={{ height: '62%' }}></div>
+                                    <div className="bar" style={{ height: '40%' }}></div>
                                 </div>
                             </div>
                         </Card>
@@ -165,16 +167,16 @@ const Dashboard = () => {
                     {/* Statistics Section */}
                     <Card className="statistics-card">
                         <div className="statistics-header">
-                            <h3 className="card-title">Statistiques</h3>
+                            <h3 className="card-title">{t('dashboard.statsTitle')}</h3>
                             <div className="stats-filter">
-                                <input type="text" placeholder="Rechercher..." className="filter-input" />
+                                <input type="text" placeholder={t('common.search')} className="filter-input" />
                                 <select className="date-select">
                                     <option>Fév 1 - Fév 7</option>
                                 </select>
                             </div>
                         </div>
                         <div className="statistics-content">
-                            <p className="no-data">Aucune donnée disponible</p>
+                            <p className="no-data">{t('common.noData')}</p>
                         </div>
                     </Card>
                 </div>
@@ -184,33 +186,33 @@ const Dashboard = () => {
                     {/* Monthly Target Card */}
                     <Card className="target-card">
                         <div className="target-header">
-                            <h3 className="card-title">Objectif mensuel</h3>
+                            <h3 className="card-title">{t('dashboard.monthlyGoal')}</h3>
                             <button className="card-menu-btn">⋯</button>
                         </div>
                         <div className="circular-progress">
                             <svg viewBox="0 0 120 120" className="progress-circle">
                                 <circle cx="60" cy="60" r="54" className="progress-bg"></circle>
-                                <circle cx="60" cy="60" r="54" className="progress-fill" style={{strokeDashoffset: '85'}}></circle>
+                                <circle cx="60" cy="60" r="54" className="progress-fill" style={{ strokeDashoffset: '85' }}></circle>
                             </svg>
                             <div className="progress-text">
                                 <span className="progress-value">75.55%</span>
                                 <span className="progress-increase">+10%</span>
                             </div>
                         </div>
-                        <p className="target-message">Vous avez dépassé votre objectif! Continuez votre bon travail.</p>
+                        <p className="target-message">{t('dashboard.goalMessage')}</p>
                         <div className="target-stats">
                             <div className="target-stat-item">
-                                <span className="target-stat-label">Objectif</span>
+                                <span className="target-stat-label">{t('dashboard.target')}</span>
                                 <span className="target-stat-value">200K</span>
                                 <span className="target-stat-change">↓</span>
                             </div>
                             <div className="target-stat-item">
-                                <span className="target-stat-label">Revenus</span>
+                                <span className="target-stat-label">{t('dashboard.revenue')}</span>
                                 <span className="target-stat-value">200K</span>
                                 <span className="target-stat-change">↑</span>
                             </div>
                             <div className="target-stat-item">
-                                <span className="target-stat-label">Aujourd'hui</span>
+                                <span className="target-stat-label">{t('dashboard.today')}</span>
                                 <span className="target-stat-value">200K</span>
                                 <span className="target-stat-change">↑</span>
                             </div>
@@ -220,19 +222,19 @@ const Dashboard = () => {
                     {/* Quick Actions */}
                     {user?.role === 'admin' && (
                         <Card className="actions-card">
-                            <h3 className="card-title">Administration</h3>
+                            <h3 className="card-title">{t('dashboard.admin')}</h3>
                             <div className="action-links">
                                 <Link to="/students" className="action-link">
                                     <span className="link-icon">👥</span>
-                                    <span>Gérer les Élèves</span>
+                                    <span>{t('dashboard.manageStudents')}</span>
                                 </Link>
                                 <Link to="/formations" className="action-link">
                                     <span className="link-icon">📚</span>
-                                    <span>Gérer les Formations</span>
+                                    <span>{t('dashboard.manageTrainings')}</span>
                                 </Link>
                                 <Link to="/sessions" className="action-link">
                                     <span className="link-icon">📅</span>
-                                    <span>Gérer les Séances</span>
+                                    <span>{t('dashboard.manageSessions')}</span>
                                 </Link>
                             </div>
                         </Card>
@@ -240,19 +242,19 @@ const Dashboard = () => {
 
                     {user?.isResponsable && (
                         <Card className="actions-card">
-                            <h3 className="card-title">Gestion Rapide</h3>
+                            <h3 className="card-title">{t('dashboard.quickActions')}</h3>
                             <div className="action-links">
                                 <Link to="/formations" className="action-link">
                                     <span className="link-icon">📚</span>
-                                    <span>Mes Formations</span>
+                                    <span>{t('dashboard.myTrainings')}</span>
                                 </Link>
                                 <Link to="/students" className="action-link">
                                     <span className="link-icon">👥</span>
-                                    <span>Mes Élèves</span>
+                                    <span>{t('dashboard.myStudents')}</span>
                                 </Link>
                                 <button className="action-link">
                                     <span className="link-icon">➕</span>
-                                    <span>Nouvelle Formation</span>
+                                    <span>{t('dashboard.newTraining')}</span>
                                 </button>
                             </div>
                         </Card>

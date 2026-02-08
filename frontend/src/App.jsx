@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DialogProvider } from './context/DialogContext';
 import { PreferenceProvider, usePreferences } from './context/PreferenceContext';
+import { LanguageProvider } from './context/LanguageContext';
 import DialogContainer from './components/DialogContainer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AvatarAssistant from './components/AvatarAssistant';
@@ -41,35 +42,35 @@ function AppRoot() {
             <DialogContainer />
             <BrowserRouter>
                 <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                    {/* Public Routes */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
 
-                {/* Protected Routes */}
-                <Route
-                    path="/"
-                    element={
-                        <ProtectedRoute>
-                            <Layout />
-                        </ProtectedRoute>
-                    }
-                >
-                    <Route index element={<Navigate to="/dashboard" replace />} />
-                    <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="students" element={<StudentList />} />
-                    <Route path="students/:id" element={<StudentDetail />} />
+                    {/* Protected Routes */}
+                    <Route
+                        path="/"
+                        element={
+                            <ProtectedRoute>
+                                <Layout />
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route index element={<Navigate to="/dashboard" replace />} />
+                        <Route path="dashboard" element={<Dashboard />} />
+                        <Route path="students" element={<StudentList />} />
+                        <Route path="students/:id" element={<StudentDetail />} />
 
-                    <Route path="formations" element={<FormationList />} />
-                    <Route path="formations/:id" element={<FormationDetail />} />
+                        <Route path="formations" element={<FormationList />} />
+                        <Route path="formations/:id" element={<FormationDetail />} />
 
-                    <Route path="sessions" element={<SessionList />} />
-                    <Route path="sessions/:id" element={<SessionDetail />} />
-                    <Route path="certifications" element={<CertificationList />} />
-                    <Route path="history" element={<History />} />
-                </Route>
+                        <Route path="sessions" element={<SessionList />} />
+                        <Route path="sessions/:id" element={<SessionDetail />} />
+                        <Route path="certifications" element={<CertificationList />} />
+                        <Route path="history" element={<History />} />
+                    </Route>
 
-                {/* Catch all */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                    {/* Catch all */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
                 <AvatarAssistant />
                 <SignLanguagePlayer />
@@ -85,7 +86,9 @@ function App() {
         <DialogProvider>
             <AuthProvider>
                 <PreferenceProvider>
-                    <AppRoot />
+                    <LanguageProvider>
+                        <AppRoot />
+                    </LanguageProvider>
                 </PreferenceProvider>
             </AuthProvider>
         </DialogProvider>

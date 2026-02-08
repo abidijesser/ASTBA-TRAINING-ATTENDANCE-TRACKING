@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useDialog } from '../../context/DialogContext';
 import { formationAPI } from '../../api/formations';
 import { userAPI } from '../../api/users';
@@ -10,6 +11,7 @@ import './FormationList.css';
 
 const FormationList = () => {
     const { user, isResponsable } = useAuth();
+    const { t } = useLanguage();
     const { showAlert, showConfirm, showError, showSuccess } = useDialog();
     const [formations, setFormations] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,6 +47,7 @@ const FormationList = () => {
             setFormations(response.data.formations);
         } catch (error) {
             console.error('Error fetching formations:', error);
+            showError(t('formation.loadError'));
         } finally {
             setLoading(false);
         }
@@ -89,16 +92,17 @@ const FormationList = () => {
             });
             setMedias([]);
             fetchFormations();
+            showSuccess(t('formation.createSuccess'));
         } catch (error) {
             console.error('Error creating formation:', error);
-            showError("Erreur lors de la création (Vérifier que le nom est unique)");
+            showError(t('formation.createError'));
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleDelete = async (id) => {
-        const confirmed = await showConfirm('Êtes-vous sûr de vouloir supprimer cette formation ?', 'Supprimer la formation');
+        const confirmed = await showConfirm(t('formation.deleteConfirm'), t('formation.deleteTitle'));
         if (confirmed) {
             try {
                 await formationAPI.delete(id);
@@ -128,13 +132,13 @@ const FormationList = () => {
                 uploads.push({ url, publicId, type: 'image', format });
             }
             if (uploads.length === 0) {
-                showAlert('Seules les images sont autorisées.');
+                showAlert(t('formation.mediaError'));
             }
             setMedias(prev => [...prev, ...uploads]);
             e.target.value = '';
         } catch (error) {
             console.error('Error uploading media:', error);
-            showError("Échec du téléversement d'un ou plusieurs médias");
+            showError(t('common.error'));
         } finally {
             setUploading(false);
         }
@@ -158,12 +162,12 @@ const FormationList = () => {
         <div className="formation-list">
             <div className="page-header">
                 <div>
-                    <h1>{showAsTable ? 'Mes Formations' : 'Formations'}</h1>
-                    <p>{showAsTable ? 'Liste des formations vous étant assignées' : 'Gérer le catalogue des formations'}</p>
+                    <h1>{showAsTable ? t('dashboard.myTrainings') : t('formation.listTitle')}</h1>
+                    <p>{showAsTable ? t('formation.listSubtitle') : t('formation.listSubtitle')}</p>
                 </div>
                 {isResponsable && (
                     <Button onClick={() => setShowCreateModal(true)} className="btn-new">
-                        + Nouvelle Formation
+                        + {t('formation.newFormation')}
                     </Button>
                 )}
             </div>
@@ -172,20 +176,20 @@ const FormationList = () => {
                 <form onSubmit={handleSearch} className="search-form">
                     <input
                         type="text"
-                        placeholder="Rechercher une formation..."
+                        placeholder={t('formation.searchPlaceholder')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="search-input"
                     />
-                    <Button type="submit">Rechercher</Button>
+                    <Button type="submit">{t('common.search')}</Button>
                 </form>
             </Card>
 
             {loading ? (
-                <div className="loading-state">Chargement...</div>
+                <div className="loading-state">{t('common.loading')}</div>
             ) : formations.length === 0 ? (
                 <Card className="empty-state">
-                    <p>Aucune formation trouvée</p>
+                    <p>{t('formation.noFormations')}</p>
                 </Card>
             ) : showAsTable ? (
                 <Card className="table-card">
@@ -193,12 +197,12 @@ const FormationList = () => {
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th>Formation</th>
-                                    <th>Description</th>
-                                    <th>Date Début</th>
-                                    <th>Durée</th>
-                                    <th>Niveau</th>
-                                    <th>Actions</th>
+                                    <th>{t('formation.name')}</th>
+                                    <th>{t('formation.description')}</th>
+                                    <th>{t('formation.startDate')}</th>
+                                    <th>{t('formation.duration')}</th>
+                                    <th>{t('formation.level')}</th>
+                                    <th>{t('common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -209,11 +213,11 @@ const FormationList = () => {
                                         : '--';
                                     const dureeMois = parseInt(formation.duree_estimee);
                                     const dureeText = Number.isFinite(dureeMois)
-                                        ? `${dureeMois} mois`
+                                        ? `${dureeMois} ${t('formation.months')}`
                                         : (formation.duree_estimee || '--');
 
                                     const niveauLabel = Number.isFinite(formation.niveau_actuel)
-                                        ? (formation.niveau_actuel <= 4 ? `Niveau ${formation.niveau_actuel}` : 'Terminé')
+                                        ? (formation.niveau_actuel <= 4 ? `${t('student.level')} ${formation.niveau_actuel}` : t('formation.statusCompleted'))
                                         : '--';
 
                                     return (
@@ -228,7 +232,7 @@ const FormationList = () => {
                                             <td>
                                                 <Link to={`/formations/${formation._id}`}>
                                                     <Button variant="ghost" size="small">
-                                                        Consulter
+                                                        {t('common.view')}
                                                     </Button>
                                                 </Link>
                                             </td>
@@ -248,10 +252,10 @@ const FormationList = () => {
                             : '--';
                         const dureeMois = parseInt(formation.duree_estimee);
                         const dureeText = Number.isFinite(dureeMois)
-                            ? `${dureeMois} mois`
+                            ? `${dureeMois} ${t('formation.months')}`
                             : (formation.duree_estimee || '--');
                         const niveauLabel = Number.isFinite(formation.niveau_actuel)
-                            ? (formation.niveau_actuel <= 4 ? `Niveau ${formation.niveau_actuel}` : 'Terminé')
+                            ? (formation.niveau_actuel <= 4 ? `${t('student.level')} ${formation.niveau_actuel}` : t('formation.statusCompleted'))
                             : '--';
 
                         return (
@@ -268,7 +272,7 @@ const FormationList = () => {
                                 <div className="formation-actions">
                                     <Link to={`/formations/${formation._id}`}>
                                         <Button variant="secondary" size="small" fullWidth>
-                                            Voir détails
+                                            {t('formation.viewDetails')}
                                         </Button>
                                     </Link>
                                     {isResponsable && (
@@ -277,7 +281,7 @@ const FormationList = () => {
                                             size="small"
                                             onClick={() => handleDelete(formation._id)}
                                         >
-                                            Supprimer
+                                            {t('common.delete')}
                                         </Button>
                                     )}
                                 </div>
@@ -290,18 +294,18 @@ const FormationList = () => {
             <Modal
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
-                title="Nouvelle Formation"
+                title={t('formation.createTitle')}
             >
                 <form onSubmit={handleSubmit}>
                     <Input
-                        label="Titre"
+                        label={t('formation.name')}
                         name="nom"
                         value={formData.nom}
                         onChange={handleChange}
                         required
                     />
                     <Input
-                        label="Description"
+                        label={t('formation.description')}
                         name="description"
                         value={formData.description}
                         onChange={handleChange}
@@ -309,7 +313,7 @@ const FormationList = () => {
                     />
 
                     <div className="input-group">
-                        <label className="input-label">Formateur Responsable</label>
+                        <label className="input-label">{t('formation.responsable')}</label>
                         <select
                             name="responsable_id"
                             value={formData.responsable_id}
@@ -317,7 +321,7 @@ const FormationList = () => {
                             className="input"
                             required
                         >
-                            <option value="">-- Sélectionner un formateur --</option>
+                            <option value="">{t('formation.selectResponsable')}</option>
                             {formateurs.map(f => (
                                 <option key={f._id} value={f._id}>
                                     {f.nom} {f.prenom}
@@ -328,14 +332,14 @@ const FormationList = () => {
 
                     <div className="form-row">
                         <Input
-                            label="Durée estimée (ex: 3 mois)"
+                            label={t('formation.duration')}
                             name="duree_estimee"
                             value={formData.duree_estimee}
                             onChange={handleChange}
                             required
                         />
                         <Input
-                            label="Date de début"
+                            label={t('formation.startDate')}
                             type="date"
                             name="date_debut"
                             value={formData.date_debut}
@@ -345,7 +349,7 @@ const FormationList = () => {
                     </div>
 
                     <div className="input-group">
-                        <label className="input-label">Médias (images uniquement)</label>
+                        <label className="input-label">{t('formation.media')}</label>
                         <input
                             type="file"
                             multiple
@@ -364,18 +368,18 @@ const FormationList = () => {
                                                 {m.type.toUpperCase()} · {m.format || ''}
                                             </a>
                                         )}
-                                        <Button size="small" variant="danger" onClick={() => handleRemoveMedia(idx)}>Retirer</Button>
+                                        <Button size="small" variant="danger" onClick={() => handleRemoveMedia(idx)}>{t('common.delete')}</Button>
                                     </div>
                                 ))}
                             </div>
                         )}
-                        {uploading && <p className="text-muted">Téléversement en cours...</p>}
+                        {uploading && <p className="text-muted">{t('common.loading')}</p>}
                     </div>
 
                     {/* Champ "Niveau requis" supprimé (non nécessaire) */}
                     <div className="modal-actions">
                         <Button type="submit" loading={submitting} fullWidth>
-                            Créer
+                            {t('common.create')}
                         </Button>
                         <Button
                             type="button"
@@ -383,7 +387,7 @@ const FormationList = () => {
                             onClick={() => setShowCreateModal(false)}
                             fullWidth
                         >
-                            Annuler
+                            {t('common.cancel')}
                         </Button>
                     </div>
                 </form>

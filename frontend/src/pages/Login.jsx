@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePreferences } from '../context/PreferenceContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Button, Input, Card } from '../components/ui';
 import './Login.css';
 
@@ -14,6 +15,7 @@ const Login = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
     const { setPrefs } = usePreferences();
+    const { t } = useLanguage();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -42,13 +44,13 @@ const Login = () => {
         const newErrors = {};
 
         if (!formData.email) {
-            newErrors.email = "L'email est requis";
+            newErrors.email = t('auth.emailRequired');
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email invalide';
+            newErrors.email = t('auth.emailInvalid');
         }
 
         if (!formData.password) {
-            newErrors.password = 'Le mot de passe est requis';
+            newErrors.password = t('auth.passwordRequired');
         }
 
         return newErrors;
@@ -73,7 +75,7 @@ const Login = () => {
             navigate('/dashboard');
         } catch (error) {
             setGeneralError(
-                error.response?.data?.message || 'Erreur de connexion. Veuillez réessayer.'
+                error.response?.data?.message || t('auth.loginError')
             );
         } finally {
             setLoading(false);
@@ -88,11 +90,11 @@ const Login = () => {
                         <div className="logo-icon">AS</div>
                     </div>
                     <h1 className="login-title">ASTBA</h1>
-                    <p className="login-subtitle">Système de Gestion de Formations</p>
+                    <p className="login-subtitle">{t('auth.subtitle')}</p>
                 </header>
 
                 <Card>
-                    <form onSubmit={handleSubmit} className="login-form" aria-label="Formulaire de connexion">
+                    <form onSubmit={handleSubmit} className="login-form" aria-label={t('auth.loginTitle')}>
                         {generalError && (
                             <div className="login-error-banner" role="alert" aria-live="assertive">
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -107,7 +109,7 @@ const Login = () => {
                         )}
 
                         <Input
-                            label="Email"
+                            label={t('auth.email')}
                             type="email"
                             name="email"
                             value={formData.email}
@@ -118,7 +120,7 @@ const Login = () => {
                         />
 
                         <Input
-                            label="Mot de passe"
+                            label={t('auth.password')}
                             type="password"
                             name="password"
                             value={formData.password}
@@ -129,15 +131,15 @@ const Login = () => {
                         />
 
                         <Button type="submit" fullWidth loading={loading}>
-                            Se connecter
+                            {t('auth.loginButton')}
                         </Button>
                     </form>
                 </Card>
 
                 <p className="login-footer">
-                    Première connexion ?{' '}
+                    {t('auth.firstConnection')}{' '}
                     <Link to="/register" className="login-link">
-                        Créer un compte
+                        {t('auth.createAccount')}
                     </Link>
                 </p>
             </div>

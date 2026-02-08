@@ -4,11 +4,13 @@ import { sessionAPI, niveauAPI } from '../../api/sessions';
 import { formationAPI } from '../../api/formations';
 import { Button, Card, Modal, Input } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useDialog } from '../../context/DialogContext';
 import './SessionList.css';
 
 const SessionList = () => {
     const { isResponsable } = useAuth();
+    const { t, language } = useLanguage();
     const { showAlert, showError } = useDialog();
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -108,7 +110,7 @@ const SessionList = () => {
         e.preventDefault();
         try {
             if (!formData.niveau_id) {
-                showAlert("Erreur: Niveau non identifié");
+                showAlert(t('session.errorLevelMissing'));
                 return;
             }
 
@@ -124,7 +126,7 @@ const SessionList = () => {
             fetchSessions();
         } catch (error) {
             console.error("Error creating session:", error);
-            showError("Erreur lors de la création");
+            showError(t('session.createError'));
         }
     };
 
@@ -136,12 +138,12 @@ const SessionList = () => {
         <div className="session-list">
             <div className="page-header">
                 <div>
-                    <h1>Séances</h1>
-                    <p>Gérer le planning des cours</p>
+                    <h1>{t('session.listTitle')}</h1>
+                    <p>{t('session.listSubtitle')}</p>
                 </div>
                 {isResponsable && (
                     <Button onClick={() => setShowCreateModal(true)} className="btn-new">
-                        + Nouvelle Séance
+                        + {t('session.newSession')}
                     </Button>
                 )}
             </div>
@@ -150,20 +152,20 @@ const SessionList = () => {
                 <form onSubmit={handleSearch} className="search-form">
                     <input
                         type="text"
-                        placeholder="Rechercher une séance..."
+                        placeholder={t('session.searchPlaceholder')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="search-input"
                     />
-                    <Button type="submit">Rechercher</Button>
+                    <Button type="submit">{t('common.search')}</Button>
                 </form>
             </Card>
 
             {loading ? (
-                <div className="loading-state">Chargement...</div>
+                <div className="loading-state">{t('common.loading')}</div>
             ) : sessions.length === 0 ? (
                 <Card className="empty-state">
-                    <p>Aucune séance planifiée.</p>
+                    <p>{t('session.noSessions')}</p>
                 </Card>
             ) : (
                 <div className="sessions-grid">
@@ -176,32 +178,32 @@ const SessionList = () => {
                         return (
                             <Card key={session._id} className={`session-card ${isLocked ? 'locked' : ''} ${isFinished ? 'finished' : ''}`}>
                                 <div className="session-header">
-                                    <h3>{session.nom || 'Séance sans nom'}</h3>
+                                    <h3>{session.nom || t('session.unnamedSession')}</h3>
                                     <div className="session-badges">
                                         <span className={`session-type ${session.type?.toLowerCase().replace(' ', '-')}`}>
                                             {session.type}
                                         </span>
                                         <span className={`session-status-badge ${session.statut}`}>
-                                            {session.statut}
+                                            {session.statut ? (t(`formation.status${session.statut.charAt(0).toUpperCase() + session.statut.slice(1)}`) || session.statut) : ''}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="session-info">
-                                    <p><strong>Formation:</strong> {session.niveau_id?.formation_id?.nom}</p>
-                                    <p><strong>Niveau:</strong> {session.niveau_id?.nom} (N°{levelNum})</p>
-                                    <p><strong>Date:</strong> {new Date(session.date).toLocaleDateString()}</p>
-                                    <p><strong>Horaire:</strong> {session.heure_debut} - {session.heure_fin}</p>
-                                    <p><strong>Formateur:</strong> {session.formateur_id?.nom} {session.formateur_id?.prenom}</p>
+                                    <p><strong>{t('session.formationLabel')}</strong> {session.niveau_id?.formation_id?.nom}</p>
+                                    <p><strong>{t('session.levelLabel')}</strong> {session.niveau_id?.nom} (N°{levelNum})</p>
+                                    <p><strong>{t('session.dateLabel')}</strong> {session.date ? new Date(session.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : (language === 'en' ? 'en-US' : 'fr-FR')) : ''}</p>
+                                    <p><strong>{t('session.timeLabel')}</strong> {session.heure_debut} - {session.heure_fin}</p>
+                                    <p><strong>{t('session.trainerLabel')}</strong> {session.formateur_id?.nom} {session.formateur_id?.prenom}</p>
                                 </div>
                                 <div className="session-actions">
                                     {isLocked ? (
                                         <Button size="small" variant="secondary" fullWidth disabled>
-                                            🔒 Niveau bloqué
+                                            🔒 {t('session.levelLocked')}
                                         </Button>
                                     ) : (
                                         <Link to={`/sessions/${session._id}`} className="action-link">
                                             <Button size="small" variant={isFinished ? "ghost" : "secondary"} fullWidth>
-                                                {isFinished ? "Consulter" : "Gérer présences"}
+                                                {isFinished ? t('common.view') : t('session.manageAttendance')}
                                             </Button>
                                         </Link>
                                     )}
@@ -215,11 +217,11 @@ const SessionList = () => {
             <Modal
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
-                title="Planifier une Séance"
+                title={t('session.planSessionTitle')}
             >
                 <form onSubmit={handleSubmit}>
                     <div className="input-group">
-                        <label className="input-label">Formation *</label>
+                        <label className="input-label">{t('session.formationRequired')}</label>
                         <select
                             name="formation_id"
                             value={formData.formation_id}
@@ -227,7 +229,7 @@ const SessionList = () => {
                             className="input"
                             required
                         >
-                            <option value="">Sélectionner une formation</option>
+                            <option value="">{t('formation.selectFormation')}</option>
                             {formations.map(f => (
                                 <option key={f._id || f.id} value={f._id || f.id}>{f.nom}</option>
                             ))}
@@ -236,12 +238,12 @@ const SessionList = () => {
 
                     {formData.niveau_id && (
                         <div className="info-message">
-                            Niveau actuel: {formData.niveau_numero}
+                            {t('session.currentLevel')} {formData.niveau_numero}
                         </div>
                     )}
 
                     <Input
-                        label="Date"
+                        label={t('session.dateInput')}
                         type="date"
                         name="date"
                         value={formData.date}
@@ -250,7 +252,7 @@ const SessionList = () => {
                     />
                     <div className="form-row">
                         <Input
-                            label="Début"
+                            label={t('session.startTime')}
                             type="time"
                             name="heure_debut"
                             value={formData.heure_debut}
@@ -258,7 +260,7 @@ const SessionList = () => {
                             required
                         />
                         <Input
-                            label="Fin"
+                            label={t('session.endTime')}
                             type="time"
                             name="heure_fin"
                             value={formData.heure_fin}
@@ -267,26 +269,26 @@ const SessionList = () => {
                         />
                     </div>
                     <div className="input-group">
-                        <label className="input-label">Type</label>
+                        <label className="input-label">{t('session.typeLabel')}</label>
                         <select
                             name="type"
                             value={formData.type}
                             onChange={handleChange}
                             className="input"
                         >
-                            <option value="Presentiel">Présentiel</option>
-                            <option value="En ligne">En ligne</option>
+                            <option value="Presentiel">{t('session.typeInPerson')}</option>
+                            <option value="En ligne">{t('session.typeOnline')}</option>
                         </select>
                     </div>
                     <div className="modal-actions">
-                        <Button type="submit" fullWidth disabled={!formData.niveau_id}>Créer</Button>
+                        <Button type="submit" fullWidth disabled={!formData.niveau_id}>{t('common.create')}</Button>
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => setShowCreateModal(false)}
                             fullWidth
                         >
-                            Annuler
+                            {t('common.cancel')}
                         </Button>
                     </div>
                 </form>

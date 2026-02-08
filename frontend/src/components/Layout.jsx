@@ -1,5 +1,7 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 import './Layout.css';
 
 /**
@@ -8,75 +10,79 @@ import './Layout.css';
  */
 const Layout = () => {
     const { user, logout, isResponsable, isFormateur } = useAuth();
+    const { t } = useLanguage();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleLogout = async () => {
         await logout();
         navigate('/login');
     };
 
+    const isActive = (path) => location.pathname.startsWith(path);
+
     return (
         <div className="layout">
-            <aside className="sidebar" role="complementary" aria-label="Navigation principale">
+            <aside className="sidebar" role="complementary" aria-label={t('nav.subtitle')}>
                 <header className="sidebar-header">
                     <div className="sidebar-logo" aria-label="ASTBA">ASTBA</div>
-                    <p className="sidebar-subtitle">Gestion Formation</p>
+                    <p className="sidebar-subtitle">{t('nav.subtitle')}</p>
                 </header>
 
-                <nav className="sidebar-nav" aria-label="Menu de navigation">
-                    <Link to="/dashboard" className="nav-item" aria-label="Tableau de bord">
+                <nav className="sidebar-nav" aria-label={t('nav.subtitle')}>
+                    <Link to="/dashboard" className={`nav-item ${isActive('/dashboard') ? 'active' : ''}`} aria-label={t('nav.dashboard')}>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                         </svg>
-                        <span>Tableau de bord</span>
+                        <span>{t('nav.dashboard')}</span>
                     </Link>
 
-                    <Link to="/students" className="nav-item" aria-label="Gestion des élèves">
+                    <Link to="/students" className={`nav-item ${isActive('/students') ? 'active' : ''}`} aria-label={t('nav.students')}>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                         </svg>
-                        <span>Élèves</span>
+                        <span>{t('nav.students')}</span>
                     </Link>
 
                     {isResponsable && (
-                        <Link to="/formations" className="nav-item" aria-label="Gestion des formations">
+                        <Link to="/formations" className={`nav-item ${isActive('/formations') ? 'active' : ''}`} aria-label={t('nav.trainings')}>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
                             </svg>
-                            <span>Formations</span>
+                            <span>{t('nav.trainings')}</span>
                         </Link>
                     )}
 
-                    <Link to="/sessions" className="nav-item" aria-label="Gestion des séances">
+                    <Link to="/sessions" className={`nav-item ${isActive('/sessions') ? 'active' : ''}`} aria-label={t('nav.sessions')}>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                         </svg>
-                        <span>Séances</span>
+                        <span>{t('nav.sessions')}</span>
                     </Link>
 
                     {/* Formateur Specific Link (Visible only to formateurs, not responsables/admins who have the generic Formations link) */}
                     {user?.role === 'formateur' && (
-                        <Link to="/formations" className="nav-item" aria-label="Mes formations">
+                        <Link to="/formations" className={`nav-item ${isActive('/formations') ? 'active' : ''}`} aria-label={t('nav.trainings')}>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
                             </svg>
-                            <span>Mes Formations</span>
+                            <span>{t('nav.trainings')}</span>
                         </Link>
                     )}
 
-                    <Link to="/history" className="nav-item" aria-label="Historique des activités">
+                    <Link to="/history" className={`nav-item ${isActive('/history') ? 'active' : ''}`} aria-label={t('nav.history')}>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fillRule="evenodd" d="M3 2a1 1 0 000 2h1a1 1 0 100-2H3zM3 6a1 1 0 000 2h1a1 1 0 100-2H3zM3 10a1 1 0 000 2h1a1 1 0 100-2H3zM7 4a1 1 0 110 2h8a1 1 0 110-2H7zm0 4a1 1 0 110 2h8a1 1 0 110-2H7zm0 4a1 1 0 110 2h8a1 1 0 110-2H7z" clipRule="evenodd" />
                         </svg>
-                        <span>Historique</span>
+                        <span>{t('nav.history')}</span>
                     </Link>
 
                     {isResponsable && (
-                        <Link to="/certifications" className="nav-item" aria-label="Gestion des certifications">
+                        <Link to="/certifications" className={`nav-item ${isActive('/certifications') ? 'active' : ''}`} aria-label={t('nav.certifications')}>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path d="M4 3a2 2 0 012-2h8a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V3zm3 3h6v2H7V6zm0 4h6v2H7v-2zm0 4h6v2H7v-2z" />
                             </svg>
-                            <span>Certifications</span>
+                            <span>{t('nav.certifications')}</span>
                         </Link>
                     )}
                 </nav>
@@ -88,20 +94,25 @@ const Layout = () => {
                         </div>
                         <div className="user-details">
                             <div className="user-name">{user?.nom} {user?.prenom}</div>
-                            <div className="user-role">{user?.role}</div>
+                            <div className="user-role">{t(`auth.role${user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}`) || user?.role}</div>
                         </div>
                     </div>
-                    <button onClick={handleLogout} className="logout-btn" type="button" aria-label="Se déconnecter">
+                    <button onClick={handleLogout} className="logout-btn" type="button" aria-label={t('nav.logout')}>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
                         </svg>
-                        <span>Déconnexion</span>
+                        <span>{t('nav.logout')}</span>
                     </button>
                 </div>
             </aside>
 
             <main className="main-content">
-                <Outlet />
+                <header className="main-header">
+                    <LanguageSwitcher />
+                </header>
+                <div className="page-content">
+                    <Outlet />
+                </div>
             </main>
         </div>
     );

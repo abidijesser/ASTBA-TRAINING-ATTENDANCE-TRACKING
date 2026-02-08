@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { certificationAPI } from '../../api/certifications';
+import { useLanguage } from '../../context/LanguageContext';
 import { useDialog } from '../../context/DialogContext';
 import { Button, Card } from '../../components/ui';
 import './CertificationList.css';
 
 const CertificationList = () => {
     const { showAlert, showError } = useDialog();
+    const { t } = useLanguage();
     const [certifications, setCertifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
@@ -48,10 +50,10 @@ const CertificationList = () => {
             link.click();
             link.remove();
             URL.revokeObjectURL(url);
-            showAlert('Certificat téléchargé');
+            showAlert(t('certification.downloadSuccess'));
         } catch (error) {
             console.error('Error downloading certificate:', error);
-            let msg = 'Erreur lors du téléchargement';
+            let msg = t('certification.downloadError');
             try {
                 if (error?.response?.data) {
                     const data = error.response.data;
@@ -71,7 +73,7 @@ const CertificationList = () => {
                 } else if (error?.message) {
                     msg = error.message;
                 }
-            } catch {}
+            } catch { }
             showError(msg);
         }
     };
@@ -84,11 +86,11 @@ const CertificationList = () => {
                 remarques: 'Validation manuelle',
             };
             const resp = await certificationAPI.validate(payload);
-            showAlert(resp.message || 'Certificat validé');
+            showAlert(resp.message || t('certification.validateSuccess'));
             fetchCertifications();
         } catch (error) {
             console.error('Error validating certificate:', error);
-            showError("Échec de la validation du certificat");
+            showError(t('certification.validateError'));
         }
     };
 
@@ -97,14 +99,14 @@ const CertificationList = () => {
         const map = new Map();
         for (const cert of certifications) {
             const fid = cert.formation_id?._id || 'sans-formation';
-            const fname = cert.formation_id?.nom || 'Sans formation';
+            const fname = cert.formation_id?.nom || t('certification.noFormation');
             if (!map.has(fid)) {
                 map.set(fid, { id: fid, name: fname, items: [] });
             }
             map.get(fid).items.push(cert);
         }
         return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-    }, [certifications]);
+    }, [certifications, t]);
 
     const toggleExpand = (formationId) => {
         setExpanded((prev) => ({ ...prev, [formationId]: !prev[formationId] }));
@@ -114,8 +116,8 @@ const CertificationList = () => {
         <div className="certification-list" style={{ maxWidth: 'var(--max-width)' }}>
             <div className="page-header">
                 <div>
-                    <h1>Certifications</h1>
-                    <p>Gérer les certificats délivrés aux élèves</p>
+                    <h1>{t('certification.title')}</h1>
+                    <p>{t('certification.manageSubtitle')}</p>
                 </div>
             </div>
 
@@ -124,12 +126,12 @@ const CertificationList = () => {
                     <form onSubmit={handleSearch} className="search-form">
                         <input
                             type="text"
-                            placeholder="Rechercher par nom élève..."
+                            placeholder={t('certification.searchPlaceholder')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="search-input"
                         />
-                        <Button type="submit">Rechercher</Button>
+                        <Button type="submit">{t('common.search')}</Button>
                     </form>
                     <select
                         className="input"
@@ -137,15 +139,15 @@ const CertificationList = () => {
                         onChange={(e) => setFilter(e.target.value)}
                         style={{ width: 'auto', minWidth: '150px' }}
                     >
-                        <option value="all">Tous les statuts</option>
-                        <option value="valide">Validés</option>
-                        <option value="en_attente">En attente</option>
+                        <option value="all">{t('certification.allStatuses')}</option>
+                        <option value="valide">{t('certification.statusValidated')}</option>
+                        <option value="en_attente">{t('certification.statusPending')}</option>
                     </select>
                 </div>
             </Card>
 
             {loading ? (
-                <div className="loading-state">Chargement...</div>
+                <div className="loading-state">{t('common.loading')}</div>
             ) : certifications.length > 0 ? (
                 <div>
                     {groupedByFormation.map((group) => (
@@ -182,7 +184,7 @@ const CertificationList = () => {
                                                 <h3>{cert.eleve_id?.nom} {cert.eleve_id?.prenom}</h3>
                                                 <div className="cert-meta">
                                                     <span>📅 {new Date(cert.date_obtention).toLocaleDateString()}</span>
-                                                    <span>📊 {cert.pourcentage_presence_total}% présence</span>
+                                                    <span>📊 {cert.pourcentage_presence_total}% {t('student.attendance')}</span>
                                                 </div>
                                             </div>
                                             <div className="cert-footer" style={{ display: 'flex', gap: 8 }}>
@@ -192,7 +194,7 @@ const CertificationList = () => {
                                                     fullWidth
                                                     onClick={() => handleDownload(cert)}
                                                 >
-                                                    📄 Télécharger
+                                                    📄 {t('common.download')}
                                                 </Button>
                                             </div>
                                         </Card>
@@ -204,7 +206,7 @@ const CertificationList = () => {
                 </div>
             ) : (
                 <Card className="empty-state">
-                    <p>Aucune certification trouvée.</p>
+                    <p>{t('certification.noCertifications')}</p>
                 </Card>
             )}
         </div>

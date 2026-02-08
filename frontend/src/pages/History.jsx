@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { activityAPI } from '../api/activities';
 import { Card } from '../components/ui';
 import './History.css';
 
 const History = () => {
     const { user } = useAuth();
+    const { t, language } = useLanguage();
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
@@ -21,7 +23,7 @@ const History = () => {
             const params = {};
             if (filter !== 'all') params.type = filter;
             if (dateFilter) params.date = dateFilter;
-            
+
             const response = await activityAPI.getUserHistory(user._id, params);
             setActivities(response.data.activities || []);
         } catch (error) {
@@ -61,7 +63,11 @@ const History = () => {
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleString('fr-FR', {
+        let locale = 'fr-FR';
+        if (language === 'en') locale = 'en-US';
+        if (language === 'ar') locale = 'ar-SA';
+
+        return date.toLocaleString(locale, {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -75,8 +81,8 @@ const History = () => {
         <div className="history-page">
             <div className="history-header">
                 <div>
-                    <h1>Historique de mes actions</h1>
-                    <p>Suivi complet de toutes vos activités</p>
+                    <h1>{t('history.title')}</h1>
+                    <p>{t('history.subtitle')}</p>
                 </div>
             </div>
 
@@ -84,27 +90,27 @@ const History = () => {
                 <Card className="filter-card">
                     <div className="filters-container">
                         <div className="filter-group">
-                            <label>Type d'activité</label>
-                            <select 
-                                value={filter} 
+                            <label>{t('history.activityType')}</label>
+                            <select
+                                value={filter}
                                 onChange={(e) => setFilter(e.target.value)}
                                 className="filter-select"
                             >
-                                <option value="all">Tous les types</option>
-                                <option value="create">Créations</option>
-                                <option value="update">Modifications</option>
-                                <option value="delete">Suppressions</option>
-                                <option value="login">Connexions</option>
-                                <option value="logout">Déconnexions</option>
-                                <option value="download">Téléchargements</option>
-                                <option value="upload">Uploads</option>
-                                <option value="assign">Assignments</option>
+                                <option value="all">{t('history.allTypes')}</option>
+                                <option value="create">{t('history.typeCreate')}</option>
+                                <option value="update">{t('history.typeUpdate')}</option>
+                                <option value="delete">{t('history.typeDelete')}</option>
+                                <option value="login">{t('history.typeLogin')}</option>
+                                <option value="logout">{t('history.typeLogout')}</option>
+                                <option value="download">{t('history.typeDownload')}</option>
+                                <option value="upload">{t('history.typeUpload')}</option>
+                                <option value="assign">{t('history.typeAssign')}</option>
                             </select>
                         </div>
 
                         <div className="filter-group">
-                            <label>Date</label>
-                            <input 
+                            <label>{t('common.date')}</label>
+                            <input
                                 type="date"
                                 value={dateFilter}
                                 onChange={(e) => setDateFilter(e.target.value)}
@@ -116,10 +122,10 @@ const History = () => {
             </div>
 
             {loading ? (
-                <div className="loading-state">Chargement de l'historique...</div>
+                <div className="loading-state">{t('history.loading')}</div>
             ) : activities.length === 0 ? (
                 <Card className="empty-state">
-                    <p>Aucune activité enregistrée pour les filtres sélectionnés</p>
+                    <p>{t('history.noActivity')}</p>
                 </Card>
             ) : (
                 <div className="timeline">
@@ -138,32 +144,32 @@ const History = () => {
                                     </div>
                                     <div className="activity-details">
                                         <div className="detail-row">
-                                            <span className="detail-label">Type:</span>
+                                            <span className="detail-label">{t('history.detailType')}</span>
                                             <span className={`activity-badge ${getActivityColor(activity.type)}`}>
                                                 {activity.type.toUpperCase()}
                                             </span>
                                         </div>
                                         {activity.entityType && (
                                             <div className="detail-row">
-                                                <span className="detail-label">Entité:</span>
+                                                <span className="detail-label">{t('history.detailEntity')}</span>
                                                 <span className="detail-value">{activity.entityType}</span>
                                             </div>
                                         )}
                                         {activity.entityName && (
                                             <div className="detail-row">
-                                                <span className="detail-label">Élément:</span>
+                                                <span className="detail-label">{t('history.detailElement')}</span>
                                                 <span className="detail-value">{activity.entityName}</span>
                                             </div>
                                         )}
                                         {activity.details && (
                                             <div className="detail-row">
-                                                <span className="detail-label">Détails:</span>
+                                                <span className="detail-label">{t('history.detailDetails')}</span>
                                                 <span className="detail-value">{activity.details}</span>
                                             </div>
                                         )}
                                         {activity.ipAddress && (
                                             <div className="detail-row">
-                                                <span className="detail-label">Adresse IP:</span>
+                                                <span className="detail-label">{t('history.detailIP')}</span>
                                                 <span className="detail-value">{activity.ipAddress}</span>
                                             </div>
                                         )}

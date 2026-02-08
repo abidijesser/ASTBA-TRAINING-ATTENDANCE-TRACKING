@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Button, Input, Card } from '../components/ui';
 import './Login.css';
 
@@ -11,6 +12,7 @@ import './Login.css';
 const Register = () => {
     const navigate = useNavigate();
     const { register } = useAuth();
+    const { t } = useLanguage();
 
     const [formData, setFormData] = useState({
         nom: '',
@@ -41,23 +43,23 @@ const Register = () => {
         const newErrors = {};
 
         if (!formData.nom) {
-            newErrors.nom = 'Le nom est requis';
+            newErrors.nom = t('common.errorName');
         }
 
         if (!formData.prenom) {
-            newErrors.prenom = 'Le prénom est requis';
+            newErrors.prenom = t('common.errorFirstName');
         }
 
         if (!formData.email) {
-            newErrors.email = "L'email est requis";
+            newErrors.email = t('auth.emailRequired');
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email invalide';
+            newErrors.email = t('auth.emailInvalid');
         }
 
         if (!formData.password) {
-            newErrors.password = 'Le mot de passe est requis';
+            newErrors.password = t('auth.passwordRequired');
         } else if (formData.password.length < 6) {
-            newErrors.password = 'Minimum 6 caractères';
+            newErrors.password = t('auth.passwordMinLength');
         }
 
         return newErrors;
@@ -91,11 +93,11 @@ const Register = () => {
                     backendErrors[err.field] = err.message;
                 });
                 setErrors(backendErrors);
-                setGeneralError("Veuillez corriger les erreurs ci-dessous.");
+                setGeneralError(t('auth.fixErrors'));
             } else {
                 const errorMessage = error.response?.data?.message ||
                     error.message ||
-                    "Erreur lors de l'inscription. Veuillez réessayer.";
+                    t('auth.registerError');
                 setGeneralError(errorMessage);
             }
         } finally {
@@ -107,14 +109,14 @@ const Register = () => {
         <div className="login-container">
             <div className="login-box">
                 <div className="login-header">
-                    
+
                     <h1 className="login-title">ASTBA</h1>
                 </div>
 
                 <Card>
                     <form onSubmit={handleSubmit} className="login-form">
                         {generalError && (
-                            <div className="login-error-banner" style={{ whiteSpace: 'pre-wrap' }}>
+                            <div className="login-error-banner" style={{ whiteWhiteSpace: 'pre-wrap' }}>
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                                     <path
                                         fillRule="evenodd"
@@ -127,29 +129,29 @@ const Register = () => {
                         )}
 
                         <Input
-                            label="Nom"
+                            label={t('auth.lastName')}
                             type="text"
                             name="nom"
                             value={formData.nom}
                             onChange={handleChange}
-                            placeholder="Votre nom"
+                            placeholder={t('auth.lastName')}
                             error={errors.nom}
                             required
                         />
 
                         <Input
-                            label="Prénom"
+                            label={t('auth.firstName')}
                             type="text"
                             name="prenom"
                             value={formData.prenom}
                             onChange={handleChange}
-                            placeholder="Votre prénom"
+                            placeholder={t('auth.firstName')}
                             error={errors.prenom}
                             required
                         />
 
                         <Input
-                            label="Email"
+                            label={t('auth.email')}
                             type="email"
                             name="email"
                             value={formData.email}
@@ -160,7 +162,7 @@ const Register = () => {
                         />
 
                         <Input
-                            label="Mot de passe"
+                            label={t('auth.password')}
                             type="password"
                             name="password"
                             value={formData.password}
@@ -172,7 +174,7 @@ const Register = () => {
 
                         <div className="input-group">
                             <label htmlFor="role" className="input-label">
-                                Rôle <span className="input-required">*</span>
+                                {t('auth.role')} <span className="input-required">*</span>
                             </label>
                             <select
                                 id="role"
@@ -181,22 +183,22 @@ const Register = () => {
                                 onChange={handleChange}
                                 className="input"
                             >
-                                <option value="formateur">Formateur</option>
-                                <option value="responsable">Responsable</option>
-                                <option value="admin">Administrateur</option>
+                                <option value="formateur">{t('auth.trainer')}</option>
+                                <option value="responsable">{t('auth.manager')}</option>
+                                <option value="admin">{t('auth.admin')}</option>
                             </select>
                         </div>
 
                         <Button type="submit" fullWidth loading={loading}>
-                            Créer un compte
+                            {t('auth.createAccount')}
                         </Button>
                     </form>
                 </Card>
 
                 <p className="login-footer">
-                    Déjà inscrit ?{' '}
+                    {t('auth.alreadyRegistered')}{' '}
                     <Link to="/login" className="login-link">
-                        Se connecter
+                        {t('auth.loginButton')}
                     </Link>
                 </p>
             </div>

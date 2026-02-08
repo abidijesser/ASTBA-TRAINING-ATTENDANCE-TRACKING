@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { sessionAPI } from '../../api/sessions';
 import { usePreferences } from '../../context/PreferenceContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useDialog } from '../../context/DialogContext';
 import { Button, Card } from '../../components/ui';
 import './SessionDetail.css';
@@ -35,7 +36,8 @@ const SessionDetail = () => {
     const [gestureIndicator, setGestureIndicator] = useState(null); // 'present' | 'absent' | null
 
     const { user } = useAuth();
-    const { prefs, t, setPrefs } = usePreferences();
+    const { prefs, t: prefsT, setPrefs } = usePreferences();
+    const { t, language } = useLanguage();
 
     useEffect(() => {
         fetchSessionData();
@@ -46,7 +48,7 @@ const SessionDetail = () => {
             setLoading(true);
             // Fetch session details
             const sessionRes = await sessionAPI.getById(id);
-            setSession(sessionRes.data);
+            setSession(sessionRes.data.seance);
 
             // Fetch attendance list (which includes students assigned to the formation)
             const attendanceRes = await sessionAPI.getAttendance(id);
@@ -57,8 +59,8 @@ const SessionDetail = () => {
             attendanceRes.data.forEach(student => {
                 // Set UI status based on existing record; leave empty if not marked
                 let uiStatus = '';
-                if (student.statut === 'present') uiStatus = 'Présent';
-                else if (student.statut === 'absent') uiStatus = 'Absent';
+                if (student.statut === 'present') uiStatus = 'present'; // Keep technical key
+                else if (student.statut === 'absent') uiStatus = 'absent'; // Keep technical key
                 initialMap[student._id] = uiStatus;
             });
             setAttendanceMap(initialMap);
@@ -82,22 +84,19 @@ const SessionDetail = () => {
             setSavingAttendance(true);
 
             // Map UI labels back to backend enums
-            const statusMap = {
-                'Présent': 'present',
-                'Absent': 'absent'
-            };
+            // In new implementation using technical keys 'present'/'absent' directly
 
             const attendanceData = Object.entries(attendanceMap).map(([eleve_id, uiStatus]) => ({
                 eleve_id,
-                statut: statusMap[uiStatus] || 'absent'
+                statut: uiStatus || 'absent'
             }));
 
             // The sessionAPI.markAttendance helper already wraps the argument in { attendances: ... }
             await sessionAPI.markAttendance(id, attendanceData);
-            showSuccess('Présences enregistrées avec succès !');
+            showSuccess(t('session.attendanceSuccess'));
             try {
                 if (prefs.voiceEnabled) {
-                    const utter = new SpeechSynthesisUtterance(t('presenceRecorded'));
+                    const utter = new SpeechSynthesisUtterance(t('session.presenceRecorded'));
                     let langCode = 'fr-FR';
                     if (prefs.language === 'ar') langCode = 'ar';
                     else if (prefs.language === 'en') langCode = 'en-US';
@@ -113,7 +112,7 @@ const SessionDetail = () => {
             fetchSessionData(); // Refresh data
         } catch (error) {
             console.error('Error saving attendance:', error);
-            showError("Erreur lors de l'enregistrement des présences");
+            showError(t('session.attendanceError'));
         } finally {
             setSavingAttendance(false);
         }
@@ -161,7 +160,7 @@ const SessionDetail = () => {
             }, 3000);
         } else {
             setGuidedMode(false);
-            showSuccess('Liste terminée');
+            showSuccess(t('session.listCompleted'));
             advancingRef.current = false;
         }
     };
@@ -171,7 +170,11 @@ const SessionDetail = () => {
         const s = students[idx];
         if (!s) return;
         if (advancingRef.current) return; // already waiting to advance
-        setAttendanceMap((prev) => ({ ...prev, [s._id]: statusLabel }));
+        // statusLabel passed here is 'Présent' or 'Absent' from gesture detection
+        // Convert to technical key
+        const statusKey = statusLabel === 'Présent' ? 'present' : 'absent';
+
+        setAttendanceMap((prev) => ({ ...prev, [s._id]: statusKey }));
         // Show visual indicator briefly
         try {
             setGestureIndicator(statusLabel === 'Présent' ? 'present' : 'absent');
@@ -252,7 +255,7 @@ const SessionDetail = () => {
                     videoRef.current.srcObject = stream;
                     await videoRef.current.play();
                 }
-                showSuccess('Caméra activée');
+                showSuccess(t('session.cameraActivated'));
                 const process = async () => {
                     if (!videoRef.current || !handsRef.current) return;
                     await handsRef.current.send({ image: videoRef.current });
@@ -261,9 +264,9 @@ const SessionDetail = () => {
                 process();
             } catch (e) {
                 console.error('Camera/Hands error', e);
-                let msg = 'La caméra ou le modèle de main est indisponible.';
-                if (e?.name === 'NotAllowedError') msg = 'Autorisez la caméra dans le navigateur (blocage permissions).';
-                else if (e?.name === 'NotFoundError') msg = 'Aucune caméra détectée sur l’appareil.';
+                let msg = t('session.cameraError');
+                if (e?.name === 'NotAllowedError') msg = t('session.cameraPermissionError');
+                else if (e?.name === 'NotFoundError') msg = t('session.cameraNotFoundError');
                 showError(msg);
                 setCameraOn(false);
             }
@@ -278,7 +281,7 @@ const SessionDetail = () => {
     }, [cameraOn, guidedMode]);
 
     const handleFinishSession = async () => {
-        const confirmed = await showConfirm('Êtes-vous sûr de vouloir terminer cette séance ? Cette action est irréversible.', 'Terminer la séance');
+        const confirmed = await showConfirm(t('session.finishConfirmMessage'), t('session.finishConfirmTitle'));
         if (!confirmed) return;
 
         try {
@@ -286,20 +289,20 @@ const SessionDetail = () => {
             const res = await sessionAPI.finish(id);
 
             // Announce session completion
-            setAnnouncement('La séance est terminée');
+            setAnnouncement(t('session.finishedAnnouncement'));
 
             // Check if level was unlocked from the response
             if (res.data?.levelCompleted || res.levelCompleted) {
                 setTimeout(() => {
-                    setAnnouncement('Le niveau suivant est débloqué');
+                    setAnnouncement(t('session.nextLevelUnlocked'));
                 }, 1500);
             }
 
-            showSuccess(res.message || 'Séance terminée avec succès !');
+            showSuccess(res.message || t('session.finishSuccess'));
             fetchSessionData();
         } catch (error) {
             console.error('Error finishing session:', error);
-            showError(error.response?.data?.message || 'Erreur lors de la validation de la séance');
+            showError(error.response?.data?.message || t('session.finishError'));
         } finally {
             setFinishingSession(false);
         }
@@ -320,15 +323,15 @@ const SessionDetail = () => {
         }
     }, [prefs.autoStartGuided, guidedMode, session, students, user, setPrefs]);
 
-    if (loading) return <div className="loading-state">Chargement...</div>;
-    if (!session) return <div className="empty-state">Séance non trouvée</div>;
+    if (loading) return <div className="loading-state">{t('common.loading')}</div>;
+    if (!session) return <div className="empty-state">{t('session.notFound')}</div>;
 
     const isFinished = session.statut === 'terminee';
     const canEditAttendance = user?.role === 'formateur';
 
     // Check if all attendance is marked
     const allAttendanceMarked = students.length > 0 && students.every(student =>
-        attendanceMap[student._id] === 'Présent' || attendanceMap[student._id] === 'Absent'
+        attendanceMap[student._id] === 'present' || attendanceMap[student._id] === 'absent'
     );
 
     return (
@@ -336,23 +339,25 @@ const SessionDetail = () => {
             <div className="page-header">
                 <div>
                     <Button variant="ghost" onClick={() => navigate('/sessions')}>
-                        ← Retour aux séances
+                        ← {t('session.backToSessions')}
                     </Button>
-                    <h1>Séance du {new Date(session.date).toLocaleDateString()}</h1>
+                    <h1>{t('session.title')} {session.date ? new Date(session.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : (language === 'en' ? 'en-US' : 'fr-FR')) : ''}</h1>
                     <div className="session-status-badges">
                         <span className={`badge level-badge`}>{session.niveau_id?.nom}</span>
                         <span className={`badge type-badge`}>{session.type}</span>
-                        <span className={`badge status-badge ${session.statut}`}>{session.statut}</span>
+                        <span className={`badge status-badge ${session.statut}`}>
+                            {session.statut ? (t(`formation.status${session.statut.charAt(0).toUpperCase() + session.statut.slice(1)}`) || session.statut) : ''}
+                        </span>
                     </div>
                 </div>
                 <div className="header-actions">
                     {!isFinished && canEditAttendance && (
                         <>
                             <Button onClick={startGuidedMode} variant="secondary">
-                                🧑‍🏫 Mode signes
+                                🧑‍🏫 {t('session.signMode')}
                             </Button>
                             <Button onClick={handleSaveAttendance} loading={savingAttendance} variant="secondary">
-                                Enregistrer les présences
+                                {t('session.saveAttendance')}
                             </Button>
                             <Button
                                 onClick={handleFinishSession}
@@ -360,31 +365,31 @@ const SessionDetail = () => {
                                 variant="primary"
                                 disabled={!allAttendanceMarked}
                                 aria-disabled={!allAttendanceMarked}
-                                aria-label={allAttendanceMarked ? "Terminer la séance" : "Terminer la séance - Toutes les présences doivent être marquées"}
+                                aria-label={allAttendanceMarked ? t('session.finishSession') : t('session.finishSessionDisabled')}
                             >
-                                Terminer la séance
+                                {t('session.finishSession')}
                             </Button>
                         </>
                     )}
                     {isFinished && (
-                        <span className="finished-message">✅ Séance terminée</span>
+                        <span className="finished-message">✅ {t('session.sessionFinished')}</span>
                     )}
                 </div>
             </div>
 
             <div className="detail-grid">
                 <Card className="info-card">
-                    <h3>Informations</h3>
+                    <h3>{t('session.infoTitle')}</h3>
                     <div className="info-row">
-                        <div><strong>Date:</strong> {new Date(session.date).toLocaleDateString()}</div>
-                        <div><strong>Horaire:</strong> {session.heure_debut} - {session.heure_fin}</div>
-                        <div><strong>Type:</strong> {session.type}</div>
-                        <div><strong>Formation:</strong> {session.niveau_id?.formation_id?.nom}</div>
+                        <div><strong>{t('session.dateLabel')}</strong> {session.date ? new Date(session.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : (language === 'en' ? 'en-US' : 'fr-FR')) : ''}</div>
+                        <div><strong>{t('session.timeLabel')}</strong> {session.heure_debut} - {session.heure_fin}</div>
+                        <div><strong>{t('session.typeLabel')}</strong> {session.type}</div>
+                        <div><strong>{t('session.formationLabel')}</strong> {session.niveau_id?.formation_id?.nom}</div>
                     </div>
                 </Card>
 
                 <Card className="attendance-card">
-                    <h3>Liste de présence ({students.length})</h3>
+                    <h3>{t('session.attendanceListTitle')} ({students.length})</h3>
 
                     {guidedMode && students[currentIndex] && (
                         <div className="guided-banner">
@@ -417,7 +422,7 @@ const SessionDetail = () => {
                                     <span style={{ fontSize: 20 }}>
                                         {gestureIndicator === 'present' ? '✊' : '🖐️'}
                                     </span>
-                                    <span>{gestureIndicator === 'present' ? 'Présent' : 'Absent'}</span>
+                                    <span>{gestureIndicator === 'present' ? t('session.present') : t('session.absent')}</span>
                                 </div>
                             )}
                         </div>
@@ -434,13 +439,13 @@ const SessionDetail = () => {
 
                     <div className="attendance-list">
                         {students.length === 0 ? (
-                            <p>Aucun élève inscrit à ce niveau.</p>
+                            <p>{t('session.noStudents')}</p>
                         ) : (
                             <table className="attendance-table">
                                 <thead>
                                     <tr>
-                                        <th>Élève</th>
-                                        <th>Statut</th>
+                                        <th>{t('session.studentHeader')}</th>
+                                        <th>{t('session.status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -455,21 +460,21 @@ const SessionDetail = () => {
                                                 <div className="status-buttons">
                                                     <button
                                                         type="button"
-                                                        className={`status-btn present ${attendanceMap[student._id] === 'Présent' ? 'active' : ''}`}
-                                                        onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'Présent')}
+                                                        className={`status-btn present ${attendanceMap[student._id] === 'present' ? 'active' : ''}`}
+                                                        onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'present')}
                                                         disabled={isFinished || !canEditAttendance}
-                                                        aria-label={`Marquer ${student.nom} ${student.prenom} comme présent`}
-                                                        aria-pressed={attendanceMap[student._id] === 'Présent'}
+                                                        aria-label={`${t('session.markAsPresent')} ${student.nom}`}
+                                                        aria-pressed={attendanceMap[student._id] === 'present'}
                                                     >
                                                         P
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        className={`status-btn absent ${attendanceMap[student._id] === 'Absent' ? 'active' : ''}`}
-                                                        onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'Absent')}
+                                                        className={`status-btn absent ${attendanceMap[student._id] === 'absent' ? 'active' : ''}`}
+                                                        onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'absent')}
                                                         disabled={isFinished || !canEditAttendance}
-                                                        aria-label={`Marquer ${student.nom} ${student.prenom} comme absent`}
-                                                        aria-pressed={attendanceMap[student._id] === 'Absent'}
+                                                        aria-label={`${t('session.markAsAbsent')} ${student.nom}`}
+                                                        aria-pressed={attendanceMap[student._id] === 'absent'}
                                                     >
                                                         A
                                                     </button>
