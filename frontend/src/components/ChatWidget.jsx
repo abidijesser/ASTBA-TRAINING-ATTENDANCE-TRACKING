@@ -77,16 +77,6 @@ export default function ChatWidget() {
         });
     })();
 
-    const grouped = (() => {
-        const map = new Map();
-        for (const it of filteredQuestions) {
-            const cat = it?.category ? String(it.category) : 'Autre';
-            if (!map.has(cat)) map.set(cat, []);
-            map.get(cat).push(it);
-        }
-        return Array.from(map.entries());
-    })();
-
     const ask = async (q) => {
         if (!q?.id || loading) return;
 
@@ -186,56 +176,32 @@ export default function ChatWidget() {
 
                     <div className="chat-input-row">
                         <div className="chat-footer">
-                            <div className="chat-search-row">
-                                <input
-                                    className="chat-search"
-                                    value={qSearch}
-                                    onChange={(e) => setQSearch(e.target.value)}
-                                    placeholder="Rechercher une question…"
-                                    aria-label="Rechercher une question"
-                                    disabled={loading}
-                                />
-                                <button
-                                    type="button"
-                                    className="chat-search-clear"
-                                    onClick={() => setQSearch('')}
-                                    disabled={loading || !qSearch.trim()}
-                                    title="Effacer la recherche"
-                                >
-                                    ×
-                                </button>
-                            </div>
+                            
 
                             <div className="chat-questions" aria-label="Questions prédéfinies">
                                 {questions.length === 0 ? (
                                     <button type="button" className="chat-qcard" disabled>
                                         Chargement…
                                     </button>
-                                ) : grouped.length === 0 ? (
+                                ) : filteredQuestions.length === 0 ? (
                                     <div className="chat-empty-mini">Aucune question ne correspond à la recherche.</div>
                                 ) : (
-                                    grouped.map(([cat, items]) => (
-                                        <div className="chat-qgroup" key={cat}>
-                                            <div className="chat-qgroup-title">{cat}</div>
-                                            <div className="chat-qgrid">
-                                                {items.map((q) => (
-                                                    <button
-                                                        key={q.id}
-                                                        type="button"
-                                                        className="chat-qcard"
-                                                        onClick={() => ask(q)}
-                                                        disabled={loading}
-                                                        title={q.title}
-                                                    >
-                                                        <div className="chat-qtitle">{q.title}</div>
-                                                        {q.description ? (
-                                                            <div className="chat-qdesc">{q.description}</div>
-                                                        ) : null}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))
+                                    <div className="chat-qgrid">
+                                        {filteredQuestions.map((q) => (
+                                            <button
+                                                key={q.id}
+                                                type="button"
+                                                className="chat-qcard"
+                                                onClick={() => ask(q)}
+                                                disabled={loading}
+                                                title={q.title}
+                                            >
+                                                {/* <div className="chat-qtitle">{q.title}</div> */}
+                                                {q.category ? <div className="chat-qmeta">{q.category}</div> : null}
+                                                {q.description ? <div className="chat-qdesc">{q.description}</div> : null}
+                                            </button>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </div>
