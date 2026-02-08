@@ -36,6 +36,14 @@ export const attendanceAPI = {
         const response = await api.get(`/presences/formation/${formationId}/student/${eleveId}`);
         return response.data;
     },
+
+    /**
+     * Get attendance summary per student (admin/responsable)
+     */
+    getSummary: async () => {
+        const response = await api.get('/presences/summary');
+        return response.data;
+    },
 };
 
 /**

@@ -23,6 +23,7 @@ import SessionList from './pages/sessions/SessionList';
 import SessionDetail from './pages/sessions/SessionDetail';
 import CertificationList from './pages/certifications/CertificationList';
 import History from './pages/History';
+import PresenceSummary from './pages/presence/PresenceSummary';
 
 // Layout
 import Layout from './components/Layout';
@@ -66,6 +67,7 @@ function AppRoot() {
 
                         <Route path="sessions" element={<SessionList />} />
                         <Route path="sessions/:id" element={<SessionDetail />} />
+                        <Route path="presence" element={<PresenceSummary />} />
                         <Route path="certifications" element={<CertificationList />} />
                         <Route path="history" element={<History />} />
                     </Route>

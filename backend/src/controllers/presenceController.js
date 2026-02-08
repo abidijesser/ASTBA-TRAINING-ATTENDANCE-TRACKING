@@ -1,7 +1,5 @@
 import Presence from '../models/Presence.js';
 import Seance from '../models/Seance.js';
-import Eleve from '../models/Eleve.js';
-import EleveFormation from '../models/EleveFormation.js';
 import Niveau from '../models/Niveau.js';
 import { checkAndValidateCertification } from '../utils/certificationHelper.js';
 
@@ -122,7 +120,9 @@ export const updatePresence = async (req, res, next) => {
         }
 
         presence.statut = statut || presence.statut;
-        presence.remarques = remarques !== undefined ? remarques : presence.remarques;
+        if (remarques !== undefined) {
+            presence.remarques = remarques;
+        }
         presence.marque_par = req.user._id;
         presence.date_marquage = new Date();
 
@@ -240,9 +240,64 @@ export const getStudentFormationAttendance = async (req, res, next) => {
                     seances_marked: totalMarked,
                     present,
                     absent,
-                    pourcentage_presence: parseFloat(pourcentage),
+                    pourcentage_presence: Number.parseFloat(pourcentage),
                 },
             },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @route   GET /api/presences/summary
+ * @desc    Get attendance summary per student (global)
+ * @access  Responsable+ (admin/responsable)
+ */
+export const getAttendanceSummary = async (req, res, next) => {
+    try {
+        // Aggregate presences by student
+        const summary = await Presence.aggregate([
+            {
+                $group: {
+                    _id: '$eleve_id',
+                    total: { $sum: 1 },
+                    presentLike: {
+                        $sum: {
+                            $cond: [{ $in: ['$statut', ['present', 'retard', 'justifie']] }, 1, 0],
+                        },
+                    },
+                    absent: {
+                        $sum: { $cond: [{ $eq: ['$statut', 'absent'] }, 1, 0] },
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'eleves',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'eleve',
+                },
+            },
+            { $unwind: { path: '$eleve', preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    _id: 0,
+                    eleve_id: '$_id',
+                    nom: '$eleve.nom',
+                    prenom: '$eleve.prenom',
+                    total: 1,
+                    present: '$presentLike',
+                    absent: 1,
+                },
+            },
+            { $sort: { nom: 1, prenom: 1 } },
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: { summary },
         });
     } catch (error) {
         next(error);

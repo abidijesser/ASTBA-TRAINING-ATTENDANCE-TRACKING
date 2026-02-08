@@ -1,18 +1,21 @@
 import express from 'express';
 import {
-    markBulkAttendance,
     updatePresence,
     getStudentAttendanceHistory,
     getSessionAttendance,
     getStudentFormationAttendance,
+    getAttendanceSummary,
 } from '../controllers/presenceController.js';
-import { protect, isFormateur } from '../middleware/auth.js';
+import { protect, isFormateur, isResponsable } from '../middleware/auth.js';
 
 const router = express.Router();
 
 /**
  * Presence Routes
  */
+
+// Attendance summary for admin/responsable
+router.get('/summary', protect, isResponsable, getAttendanceSummary);
 
 // Update single presence
 router.put('/:id', protect, isFormateur, updatePresence);

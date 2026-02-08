@@ -9,7 +9,7 @@ import './Layout.css';
  * Sidebar navigation with content area
  */
 const Layout = () => {
-    const { user, logout, isResponsable, isFormateur } = useAuth();
+    const { user, logout, isResponsable } = useAuth();
     const { t } = useLanguage();
     const navigate = useNavigate();
     const location = useLocation();
@@ -23,10 +23,9 @@ const Layout = () => {
 
     return (
         <div className="layout">
-            <aside className="sidebar" role="complementary" aria-label={t('nav.subtitle')}>
+            <aside className="sidebar" aria-label={t('nav.subtitle')}>
                 <header className="sidebar-header">
                     <div className="sidebar-logo" aria-label="ASTBA">ASTBA</div>
-                    <p className="sidebar-subtitle">{t('nav.subtitle')}</p>
                 </header>
 
                 <nav className="sidebar-nav" aria-label={t('nav.subtitle')}>
@@ -59,6 +58,15 @@ const Layout = () => {
                         </svg>
                         <span>{t('nav.sessions')}</span>
                     </Link>
+
+                    {isResponsable && (
+                        <Link to="/presence" className={`nav-item ${isActive('/presence') ? 'active' : ''}`} aria-label={t('nav.presence')}>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 8.414l2.293 2.293a1 1 0 01-1.414 1.414l-3-3A1 1 0 019 10V6a1 1 0 112 0v4.414z" />
+                            </svg>
+                            <span>{t('nav.presence')}</span>
+                        </Link>
+                    )}
 
                     {/* Formateur Specific Link (Visible only to formateurs, not responsables/admins who have the generic Formations link) */}
                     {user?.role === 'formateur' && (
