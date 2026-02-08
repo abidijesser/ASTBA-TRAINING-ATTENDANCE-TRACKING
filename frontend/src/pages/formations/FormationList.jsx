@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -29,21 +29,10 @@ const FormationList = () => {
     const [medias, setMedias] = useState([]);
     const [uploading, setUploading] = useState(false);
 
-    useEffect(() => {
-        fetchFormations();
-    }, [search]);
-
-    useEffect(() => {
-        if (isResponsable) {
-            fetchFormateurs();
-        }
-    }, [isResponsable]);
-
-    const fetchFormations = async () => {
+    const fetchFormations = useCallback(async () => {
         try {
             setLoading(true);
-            const params = search ? { search } : {};
-            const response = await formationAPI.getAll(params);
+            const response = await formationAPI.getAll({});
             setFormations(response.data.formations);
         } catch (error) {
             console.error('Error fetching formations:', error);
@@ -51,11 +40,51 @@ const FormationList = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showError, t]);
+
+    useEffect(() => {
+        fetchFormations();
+    }, [fetchFormations]);
+
+    const filteredFormations = useMemo(() => {
+        const term = String(search || '').trim().toLowerCase();
+        if (!term) return formations;
+
+        return formations.filter((formation) => {
+            const nom = String(formation?.nom || '').toLowerCase();
+            const description = String(formation?.description || '').toLowerCase();
+            const duree = String(formation?.duree_estimee || '').toLowerCase();
+            const niveauActuel = formation?.niveau_actuel != null ? String(formation.niveau_actuel).toLowerCase() : '';
+            const actif = formation?.actif != null ? String(formation.actif).toLowerCase() : '';
+            const dateDebut = formation?.date_debut ? new Date(formation.date_debut).toLocaleDateString().toLowerCase() : '';
+
+            const responsableNom = String(formation?.responsable_id?.nom || '').toLowerCase();
+            const responsablePrenom = String(formation?.responsable_id?.prenom || '').toLowerCase();
+            const responsableEmail = String(formation?.responsable_id?.email || '').toLowerCase();
+
+            return (
+                nom.includes(term) ||
+                description.includes(term) ||
+                duree.includes(term) ||
+                niveauActuel.includes(term) ||
+                actif.includes(term) ||
+                dateDebut.includes(term) ||
+                responsableNom.includes(term) ||
+                responsablePrenom.includes(term) ||
+                responsableEmail.includes(term)
+            );
+        });
+    }, [formations, search]);
+
+    useEffect(() => {
+        if (isResponsable) {
+            fetchFormateurs();
+        }
+    }, [isResponsable]);
 
     const handleSearch = (e) => {
         e.preventDefault();
-        fetchFormations();
+        // Search is live; keep submit for accessibility/Enter key.
     };
 
     const fetchFormateurs = async () => {
@@ -187,7 +216,7 @@ const FormationList = () => {
 
             {loading ? (
                 <div className="loading-state">{t('common.loading')}</div>
-            ) : formations.length === 0 ? (
+            ) : filteredFormations.length === 0 ? (
                 <Card className="empty-state">
                     <p>{t('formation.noFormations')}</p>
                 </Card>
@@ -206,7 +235,7 @@ const FormationList = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {formations.map((formation) => {
+                                {filteredFormations.map((formation) => {
                                     const hasDate = !!formation.date_debut;
                                     const dateText = hasDate
                                         ? new Date(formation.date_debut).toLocaleDateString()
@@ -245,7 +274,7 @@ const FormationList = () => {
                 </Card>
             ) : (
                 <div className="formations-grid">
-                    {formations.map((formation) => {
+                    {filteredFormations.map((formation) => {
                         const hasDate = !!formation.date_debut;
                         const dateText = hasDate
                             ? new Date(formation.date_debut).toLocaleDateString()

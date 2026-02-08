@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -33,12 +33,19 @@ const StudentList = () => {
     const [errors, setErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        fetchStudents();
-        fetchFormations();
+    const fetchStudents = useCallback(async () => {
+        try {
+            setLoading(true);
+            const response = await studentAPI.getAll({});
+            setStudents(response.data.eleves);
+        } catch (error) {
+            console.error('Error fetching students:', error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const fetchFormations = async () => {
+    const fetchFormations = useCallback(async () => {
         try {
             // Only fetch active formations for assignment
             const response = await formationAPI.getAll({ actif: true });
@@ -46,23 +53,39 @@ const StudentList = () => {
         } catch (error) {
             console.error('Error fetching formations:', error);
         }
-    };
+    }, []);
 
-    const fetchStudents = async () => {
-        try {
-            setLoading(true);
-            const response = await studentAPI.getAll({ search });
-            setStudents(response.data.eleves);
-        } catch (error) {
-            console.error('Error fetching students:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    useEffect(() => {
+        fetchStudents();
+        fetchFormations();
+    }, [fetchStudents, fetchFormations]);
+
+    const filteredStudents = useMemo(() => {
+        const term = String(search || '').trim().toLowerCase();
+        if (!term) return students;
+
+        return students.filter((student) => {
+            const nom = String(student?.nom || '').toLowerCase();
+            const prenom = String(student?.prenom || '').toLowerCase();
+            const email = String(student?.email || '').toLowerCase();
+            const telephone = String(student?.telephone || '').toLowerCase();
+            const dateNaissance = student?.date_naissance ? new Date(student.date_naissance).toLocaleDateString().toLowerCase() : '';
+            const adresse = String(student?.adresse || '').toLowerCase();
+
+            return (
+                nom.includes(term) ||
+                prenom.includes(term) ||
+                email.includes(term) ||
+                telephone.includes(term) ||
+                dateNaissance.includes(term) ||
+                adresse.includes(term)
+            );
+        });
+    }, [students, search]);
 
     const handleSearch = (e) => {
         e.preventDefault();
-        fetchStudents();
+        // Search is live; keep submit for accessibility/Enter key.
     };
 
     const handleChange = (e) => {
@@ -146,6 +169,62 @@ const StudentList = () => {
         }
     };
 
+    let content = null;
+    if (loading) {
+        content = <div className="loading-state">{t('common.loading')}</div>;
+    } else if (filteredStudents.length === 0) {
+        content = (
+            <Card className="empty-state">
+                <p>{t('student.noStudents')}</p>
+            </Card>
+        );
+    } else {
+        content = (
+            <div className="table-container">
+                <table className="data-table">
+                    <thead>
+                        <tr>
+                            <th>{t('auth.lastName')}</th>
+                            <th>{t('auth.firstName')}</th>
+                            <th>{t('auth.email')}</th>
+                            <th>{t('auth.phone')}</th>
+                            <th>{t('auth.dob')}</th>
+                            <th>{t('common.actions')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredStudents.map((student) => (
+                            <tr key={student._id}>
+                                <td>{student.nom}</td>
+                                <td>{student.prenom}</td>
+                                <td>{student.email}</td>
+                                <td>{student.telephone}</td>
+                                <td>{new Date(student.date_naissance).toLocaleDateString()}</td>
+                                <td>
+                                    <div className="action-buttons">
+                                        <Link to={`/students/${student._id}`} className="btn-icon" title={t('common.view')}>
+                                            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                                <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </Link>
+                                        {isResponsable && (
+                                            <button onClick={() => handleDelete(student._id)} className="btn-icon btn-danger" title={t('common.delete')}>
+                                                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+    }
+
     return (
         <div className="student-list">
             <div className="page-header">
@@ -173,56 +252,7 @@ const StudentList = () => {
                 </form>
             </Card>
 
-            {loading ? (
-                <div className="loading-state">{t('common.loading')}</div>
-            ) : students.length === 0 ? (
-                <Card className="empty-state">
-                    <p>{t('student.noStudents')}</p>
-                </Card>
-            ) : (
-                <div className="table-container">
-                    <table className="data-table">
-                        <thead>
-                            <tr>
-                                <th>{t('auth.lastName')}</th>
-                                <th>{t('auth.firstName')}</th>
-                                <th>{t('auth.email')}</th>
-                                <th>{t('auth.phone')}</th>
-                                <th>{t('auth.dob')}</th>
-                                <th>{t('common.actions')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {students.map((student) => (
-                                <tr key={student._id}>
-                                    <td>{student.nom}</td>
-                                    <td>{student.prenom}</td>
-                                    <td>{student.email}</td>
-                                    <td>{student.telephone}</td>
-                                    <td>{new Date(student.date_naissance).toLocaleDateString()}</td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            <Link to={`/students/${student._id}`} className="btn-icon" title={t('common.view')}>
-                                                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                                                </svg>
-                                            </Link>
-                                            {isResponsable && (
-                                                <button onClick={() => handleDelete(student._id)} className="btn-icon btn-danger" title={t('common.delete')}>
-                                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                    </svg>
-                                                </button>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+            {content}
 
             <Modal
                 isOpen={showCreateModal}

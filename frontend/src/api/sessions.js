@@ -16,8 +16,8 @@ export const sessionAPI = {
     /**
      * Get all sessions
      */
-    getAll: async () => {
-        const response = await api.get('/seances');
+    getAll: async (params = {}) => {
+        const response = await api.get('/seances', { params });
         return response.data;
     },
 

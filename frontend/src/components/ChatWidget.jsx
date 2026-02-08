@@ -177,7 +177,6 @@ export default function ChatWidget() {
                     <div className="chat-input-row">
                         <div className="chat-footer">
                             
-
                             <div className="chat-questions" aria-label="Questions prédéfinies">
                                 {questions.length === 0 ? (
                                     <button type="button" className="chat-qcard" disabled>

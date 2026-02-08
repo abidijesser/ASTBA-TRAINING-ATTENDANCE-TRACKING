@@ -3,6 +3,34 @@ import Presence from '../models/Presence.js';
 import EleveFormation from '../models/EleveFormation.js';
 import { logActivity } from './activityController.js';
 
+const ESCAPE_REGEX_REPLACEMENT = String.raw`\\$&`;
+const escapeRegex = (value) => String(value).replaceAll(/[.*+?^${}()|[\]\\]/g, ESCAPE_REGEX_REPLACEMENT);
+
+const buildSeancesQuery = ({ user, search }) => {
+    const query = {};
+
+    if (user?.role === 'formateur') {
+        query.formateur_id = user._id;
+    }
+
+    const searchRaw = String(search || '').trim();
+    if (!searchRaw) return query;
+
+    const regex = new RegExp(escapeRegex(searchRaw), 'i');
+    const numeric = Number(searchRaw);
+    const or = [
+        { nom: regex },
+        { type: regex },
+        { lieu: regex },
+        { statut: regex },
+    ];
+    if (Number.isFinite(numeric)) {
+        or.push({ numero: numeric });
+    }
+    query.$or = or;
+    return query;
+};
+
 /**
  * Seance Controller
  * Handles all seance-related operations
@@ -344,12 +372,7 @@ export const getSeanceAttendance = async (req, res, next) => {
  */
 export const getAllSeances = async (req, res, next) => {
     try {
-        const query = {};
-
-        // If user is formateur, filter by their ID
-        if (req.user.role === 'formateur') {
-            query.formateur_id = req.user._id;
-        }
+        const query = buildSeancesQuery({ user: req.user, search: req.query?.search });
 
         const seances = await Seance.find(query)
             .populate({

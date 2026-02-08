@@ -4,6 +4,8 @@ import Seance from '../models/Seance.js';
 import EleveFormation from '../models/EleveFormation.js';
 import { logActivity } from './activityController.js';
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * Formation Controller
  * Handles all formation-related operations
@@ -16,7 +18,7 @@ import { logActivity } from './activityController.js';
  */
 export const getAllFormations = async (req, res, next) => {
     try {
-        const { actif, responsable_id } = req.query;
+        const { actif, responsable_id, search } = req.query;
 
         const query = {};
         if (actif !== undefined) query.actif = actif === 'true';
@@ -27,6 +29,12 @@ export const getAllFormations = async (req, res, next) => {
         } else if (responsable_id) {
             // Admin/Responsable can filter by responsable_id
             query.responsable_id = responsable_id;
+        }
+
+        const searchTerm = String(search || '').trim();
+        if (searchTerm) {
+            const regex = new RegExp(escapeRegex(searchTerm), 'i');
+            query.$or = [{ nom: regex }, { description: regex }];
         }
 
         const formations = await Formation.find(query)

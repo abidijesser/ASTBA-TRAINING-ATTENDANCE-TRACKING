@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { sessionAPI, niveauAPI } from '../../api/sessions';
 import { formationAPI } from '../../api/formations';
@@ -27,9 +27,65 @@ const SessionList = () => {
         niveau_numero: ''
     });
 
+    let dateLocale = 'fr-FR';
+    if (language === 'ar') dateLocale = 'ar-SA';
+    else if (language === 'en') dateLocale = 'en-US';
+
+    const fetchSessions = useCallback(async () => {
+        try {
+            setLoading(true);
+            const response = await sessionAPI.getAll();
+            setSessions(response.data?.seances || response.data || []);
+        } catch (error) {
+            console.error('Error fetching sessions:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         fetchSessions();
-    }, [search]);
+    }, [fetchSessions]);
+
+    const filteredSessions = useMemo(() => {
+        const term = String(search || '').trim().toLowerCase();
+        if (!term) return sessions;
+
+        return sessions.filter((session) => {
+            const nom = String(session?.nom || '').toLowerCase();
+            const type = String(session?.type || '').toLowerCase();
+            const statut = String(session?.statut || '').toLowerCase();
+            const lieu = String(session?.lieu || '').toLowerCase();
+            const numero = session?.numero != null ? String(session.numero).toLowerCase() : '';
+
+            const formationNom = String(session?.niveau_id?.formation_id?.nom || '').toLowerCase();
+            const niveauNom = String(session?.niveau_id?.nom || '').toLowerCase();
+            const niveauNumero = session?.niveau_id?.numero != null ? String(session.niveau_id.numero).toLowerCase() : '';
+
+            const formateurNom = String(session?.formateur_id?.nom || '').toLowerCase();
+            const formateurPrenom = String(session?.formateur_id?.prenom || '').toLowerCase();
+
+            const dateText = session?.date ? new Date(session.date).toLocaleDateString(dateLocale).toLowerCase() : '';
+            const heureDebut = String(session?.heure_debut || '').toLowerCase();
+            const heureFin = String(session?.heure_fin || '').toLowerCase();
+
+            return (
+                nom.includes(term) ||
+                type.includes(term) ||
+                statut.includes(term) ||
+                lieu.includes(term) ||
+                numero.includes(term) ||
+                formationNom.includes(term) ||
+                niveauNom.includes(term) ||
+                niveauNumero.includes(term) ||
+                formateurNom.includes(term) ||
+                formateurPrenom.includes(term) ||
+                dateText.includes(term) ||
+                heureDebut.includes(term) ||
+                heureFin.includes(term)
+            );
+        });
+    }, [sessions, search, dateLocale]);
 
     useEffect(() => {
         if (isResponsable) {
@@ -37,22 +93,9 @@ const SessionList = () => {
         }
     }, [isResponsable]);
 
-    const fetchSessions = async () => {
-        try {
-            setLoading(true);
-            const params = search ? { search } : {};
-            const response = await sessionAPI.getAll(params);
-            setSessions(response.data?.seances || response.data || []);
-        } catch (error) {
-            console.error('Error fetching sessions:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleSearch = (e) => {
         e.preventDefault();
-        fetchSessions();
+        // Search is live; keep submit for accessibility/Enter key.
     };
 
     const fetchFormations = async () => {
@@ -134,6 +177,64 @@ const SessionList = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    let content = null;
+    if (loading) {
+        content = <div className="loading-state">{t('common.loading')}</div>;
+    } else if (filteredSessions.length === 0) {
+        content = (
+            <Card className="empty-state">
+                <p>{t('session.noSessions')}</p>
+            </Card>
+        );
+    } else {
+        content = (
+            <div className="sessions-grid">
+                {filteredSessions.map((session) => {
+                    const levelNum = session.niveau_id?.numero;
+                    const activeLevelNum = session.niveau_id?.formation_id?.niveau_actuel || 1;
+                    const isLocked = levelNum > activeLevelNum;
+                    const isFinished = session.statut === 'terminee';
+
+                    return (
+                        <Card key={session._id} className={`session-card ${isLocked ? 'locked' : ''} ${isFinished ? 'finished' : ''}`}>
+                            <div className="session-header">
+                                <h3>{session.nom || t('session.unnamedSession')}</h3>
+                                <div className="session-badges">
+                                    <span className={`session-type ${session.type?.toLowerCase().replace(' ', '-')}`}>
+                                        {session.type}
+                                    </span>
+                                    <span className={`session-status-badge ${session.statut}`}>
+                                        {session.statut ? (t(`formation.status${session.statut.charAt(0).toUpperCase() + session.statut.slice(1)}`) || session.statut) : ''}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="session-info">
+                                <p><strong>{t('session.formationLabel')}</strong> {session.niveau_id?.formation_id?.nom}</p>
+                                <p><strong>{t('session.levelLabel')}</strong> {session.niveau_id?.nom} (N°{levelNum})</p>
+                                <p><strong>{t('session.dateLabel')}</strong> {session.date ? new Date(session.date).toLocaleDateString(dateLocale) : ''}</p>
+                                <p><strong>{t('session.timeLabel')}</strong> {session.heure_debut} - {session.heure_fin}</p>
+                                <p><strong>{t('session.trainerLabel')}</strong> {session.formateur_id?.nom} {session.formateur_id?.prenom}</p>
+                            </div>
+                            <div className="session-actions">
+                                {isLocked ? (
+                                    <Button size="small" variant="secondary" fullWidth disabled>
+                                        🔒 {t('session.levelLocked')}
+                                    </Button>
+                                ) : (
+                                    <Link to={`/sessions/${session._id}`} className="action-link">
+                                        <Button size="small" variant={isFinished ? "ghost" : "secondary"} fullWidth>
+                                            {isFinished ? t('common.view') : t('session.manageAttendance')}
+                                        </Button>
+                                    </Link>
+                                )}
+                            </div>
+                        </Card>
+                    );
+                })}
+            </div>
+        );
+    }
+
     return (
         <div className="session-list">
             <div className="page-header">
@@ -161,58 +262,7 @@ const SessionList = () => {
                 </form>
             </Card>
 
-            {loading ? (
-                <div className="loading-state">{t('common.loading')}</div>
-            ) : sessions.length === 0 ? (
-                <Card className="empty-state">
-                    <p>{t('session.noSessions')}</p>
-                </Card>
-            ) : (
-                <div className="sessions-grid">
-                    {sessions.map((session) => {
-                        const levelNum = session.niveau_id?.numero;
-                        const activeLevelNum = session.niveau_id?.formation_id?.niveau_actuel || 1;
-                        const isLocked = levelNum > activeLevelNum;
-                        const isFinished = session.statut === 'terminee';
-
-                        return (
-                            <Card key={session._id} className={`session-card ${isLocked ? 'locked' : ''} ${isFinished ? 'finished' : ''}`}>
-                                <div className="session-header">
-                                    <h3>{session.nom || t('session.unnamedSession')}</h3>
-                                    <div className="session-badges">
-                                        <span className={`session-type ${session.type?.toLowerCase().replace(' ', '-')}`}>
-                                            {session.type}
-                                        </span>
-                                        <span className={`session-status-badge ${session.statut}`}>
-                                            {session.statut ? (t(`formation.status${session.statut.charAt(0).toUpperCase() + session.statut.slice(1)}`) || session.statut) : ''}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="session-info">
-                                    <p><strong>{t('session.formationLabel')}</strong> {session.niveau_id?.formation_id?.nom}</p>
-                                    <p><strong>{t('session.levelLabel')}</strong> {session.niveau_id?.nom} (N°{levelNum})</p>
-                                    <p><strong>{t('session.dateLabel')}</strong> {session.date ? new Date(session.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : (language === 'en' ? 'en-US' : 'fr-FR')) : ''}</p>
-                                    <p><strong>{t('session.timeLabel')}</strong> {session.heure_debut} - {session.heure_fin}</p>
-                                    <p><strong>{t('session.trainerLabel')}</strong> {session.formateur_id?.nom} {session.formateur_id?.prenom}</p>
-                                </div>
-                                <div className="session-actions">
-                                    {isLocked ? (
-                                        <Button size="small" variant="secondary" fullWidth disabled>
-                                            🔒 {t('session.levelLocked')}
-                                        </Button>
-                                    ) : (
-                                        <Link to={`/sessions/${session._id}`} className="action-link">
-                                            <Button size="small" variant={isFinished ? "ghost" : "secondary"} fullWidth>
-                                                {isFinished ? t('common.view') : t('session.manageAttendance')}
-                                            </Button>
-                                        </Link>
-                                    )}
-                                </div>
-                            </Card>
-                        );
-                    })}
-                </div>
-            )}
+            {content}
 
             <Modal
                 isOpen={showCreateModal}
