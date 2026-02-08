@@ -69,7 +69,15 @@ const Login = () => {
         try {
             await login(formData);
             // Show assistant right after login and a short interpreter hint
-            setPrefs((p) => ({ ...p, assistantOnLogin: true, voiceEnabled: true, showInterpreterHint: true }));
+            setPrefs((p) => ({
+                ...p,
+                signVideosUnlocked: false,
+                deafMuteMode: false,
+                assistantOnLogin: true,
+                assistantForceCamera: !p.signVideosUnlocked,
+                voiceEnabled: true,
+                showInterpreterHint: true,
+            }));
             navigate('/dashboard');
         } catch (error) {
             setGeneralError(

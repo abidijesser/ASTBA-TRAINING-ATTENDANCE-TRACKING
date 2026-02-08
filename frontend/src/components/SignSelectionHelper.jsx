@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { usePreferences } from '../context/PreferenceContext';
 import { normalizePhraseExact } from '../sign/signLanguageLibrary';
 
 // Globally shows a small floating button near selected text to open sign-language video.
 function SignSelectionHelper() {
+  const { prefs } = usePreferences();
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [text, setText] = useState('');
@@ -24,6 +26,7 @@ function SignSelectionHelper() {
     return () => document.removeEventListener('mouseup', onMouseUp);
   }, []);
 
+  if (!prefs.signVideosUnlocked) return null;
   if (!visible) return null;
   return (
     <button

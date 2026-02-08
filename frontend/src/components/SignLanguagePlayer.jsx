@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Modal from './ui/Modal';
+import { usePreferences } from '../context/PreferenceContext';
 import { getSignEntryForPhrase, normalizePhraseExact } from '../sign/signLanguageLibrary';
 
 function SignLanguagePlayer() {
+  const { prefs, setPrefs } = usePreferences();
   const [isOpen, setIsOpen] = useState(false);
   const [phrase, setPhrase] = useState('');
   const [loadError, setLoadError] = useState(false);
@@ -25,6 +27,11 @@ function SignLanguagePlayer() {
   };
 
   const openForPhrase = (nextPhrase) => {
+    if (!prefs.signVideosUnlocked) {
+      // No access yet: reopen assistant and request camera confirmation
+      setPrefs((p) => ({ ...p, assistantOnLogin: true, assistantForceCamera: true }));
+      return;
+    }
     lastFocusRef.current = document.activeElement;
     const normalized = normalizePhraseExact(nextPhrase);
     setPhrase(normalized);
@@ -38,7 +45,7 @@ function SignLanguagePlayer() {
     return () => {
       try { delete globalThis.openSignLanguage; } catch {}
     };
-  }, []);
+  }, [prefs.signVideosUnlocked]);
 
   // Escape to close
   useEffect(() => {

@@ -5,6 +5,7 @@ import { usePreferences } from '../../context/PreferenceContext';
 import { useAuth } from '../../context/AuthContext';
 import { useDialog } from '../../context/DialogContext';
 import { Button, Card } from '../../components/ui';
+import cameraIcon from '../../assets/icons/camera.svg';
 import './SessionDetail.css';
 
 const SessionDetail = () => {
@@ -33,12 +34,27 @@ const SessionDetail = () => {
     const cameraStartRef = useRef(0);
     const gestureIndicatorRef = useRef(null);
     const [gestureIndicator, setGestureIndicator] = useState(null); // 'present' | 'absent' | null
+    const autoStartedRef = useRef(false);
 
     const { user } = useAuth();
     const { prefs, t, setPrefs } = usePreferences();
 
+    // Sourd+Muet: marquage présence uniquement via caméra/gestes
+    // IMPORTANT: ne pas utiliser signLanguageMode ici, car il peut être activé pour un user normal (ex: hint interprète).
+    const cameraOnlyAttendance = !!prefs.deafMuteMode;
+
+    const getStatusPillClass = (uiStatus) => {
+        if (uiStatus === 'Présent') return 'present';
+        if (uiStatus === 'Absent') return 'absent';
+        return 'unmarked';
+    };
+
     useEffect(() => {
         fetchSessionData();
+    }, [id]);
+
+    useEffect(() => {
+        autoStartedRef.current = false;
     }, [id]);
 
     const fetchSessionData = async () => {
@@ -71,6 +87,7 @@ const SessionDetail = () => {
     };
 
     const handleAttendanceChange = (studentId, status) => {
+        if (cameraOnlyAttendance) return;
         setAttendanceMap(prev => ({
             ...prev,
             [studentId]: status
@@ -122,9 +139,9 @@ const SessionDetail = () => {
     // Removed unused markAllPresent
 
     // Guided mode helpers
-    const speakText = (text) => {
+    const speakText = (text, { force = false } = {}) => {
         try {
-            if (!prefs.voiceEnabled) return;
+            if (!prefs.voiceEnabled && !force) return;
             const utter = new SpeechSynthesisUtterance(text);
             let langCode = 'fr-FR';
             if (prefs.language === 'ar') langCode = 'ar';
@@ -135,14 +152,16 @@ const SessionDetail = () => {
         } catch { }
     };
 
-    const startGuidedMode = () => {
+    const startGuidedMode = ({ forceVoice = true } = {}) => {
         setGuidedMode(true);
         setCurrentIndex(0);
         currentIndexRef.current = 0;
-        setPrefs((p) => ({ ...p, voiceEnabled: true }));
+        if (forceVoice) {
+            setPrefs((p) => ({ ...p, voiceEnabled: true }));
+        }
         setCameraOn(true);
         const s = students[0];
-        if (s) speakText(`${s.nom} ${s.prenom}`);
+        if (s) speakText(`${s.nom} ${s.prenom}`, { force: forceVoice });
     };
 
     // Removed unused toggleVoice handler
@@ -305,20 +324,25 @@ const SessionDetail = () => {
         }
     };
 
-    // Auto-start guided mode when pref flag set (from assistant CTA)
+    // Auto-start guided mode:
+    // - Always auto-start for sourd-muet users (cameraOnlyAttendance)
+    // - Also supports one-shot autoStartGuided (assistant CTA)
     useEffect(() => {
-        if (
-            prefs.autoStartGuided &&
-            !guidedMode &&
-            session &&
-            session.statut !== 'terminee' &&
-            user?.role === 'formateur' &&
-            students && students.length > 0
-        ) {
-            startGuidedMode();
+        const shouldAutoStart = cameraOnlyAttendance || prefs.autoStartGuided;
+        if (!shouldAutoStart) return;
+        if (autoStartedRef.current) return;
+        if (guidedMode) return;
+        if (!session || session.statut === 'terminee') return;
+        if (user?.role !== 'formateur') return;
+        if (!students || students.length === 0) return;
+
+        autoStartedRef.current = true;
+        startGuidedMode({ forceVoice: !cameraOnlyAttendance });
+
+        if (prefs.autoStartGuided) {
             setPrefs((p) => ({ ...p, autoStartGuided: false }));
         }
-    }, [prefs.autoStartGuided, guidedMode, session, students, user, setPrefs]);
+    }, [cameraOnlyAttendance, prefs.autoStartGuided, guidedMode, session, students, user, setPrefs]);
 
     if (loading) return <div className="loading-state">Chargement...</div>;
     if (!session) return <div className="empty-state">Séance non trouvée</div>;
@@ -348,9 +372,17 @@ const SessionDetail = () => {
                 <div className="header-actions">
                     {!isFinished && canEditAttendance && (
                         <>
-                            <Button onClick={startGuidedMode} variant="secondary">
-                                🧑‍🏫 Mode signes
-                            </Button>
+                            {cameraOnlyAttendance && (
+                                <Button
+                                    onClick={() => startGuidedMode({ forceVoice: true })}
+                                    variant="secondary"
+                                    aria-label="Activer la caméra pour marquer la présence"
+                                    title="Caméra"
+                                >
+                                    <img className="session-icon" src={cameraIcon} alt="" aria-hidden="true" />
+                                    <span className="sr-only">Caméra</span>
+                                </Button>
+                            )}
                             <Button onClick={handleSaveAttendance} loading={savingAttendance} variant="secondary">
                                 Enregistrer les présences
                             </Button>
@@ -423,14 +455,9 @@ const SessionDetail = () => {
                         </div>
                     )}
 
-                    <div
-                        role="status"
-                        aria-live="polite"
-                        aria-atomic="true"
-                        className="sr-only"
-                    >
+                    <output aria-live="polite" aria-atomic="true" className="sr-only">
                         {announcement}
-                    </div>
+                    </output>
 
                     <div className="attendance-list">
                         {students.length === 0 ? (
@@ -452,28 +479,37 @@ const SessionDetail = () => {
                                                 </div>
                                             </td>
                                             <td>
-                                                <div className="status-buttons">
-                                                    <button
-                                                        type="button"
-                                                        className={`status-btn present ${attendanceMap[student._id] === 'Présent' ? 'active' : ''}`}
-                                                        onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'Présent')}
-                                                        disabled={isFinished || !canEditAttendance}
-                                                        aria-label={`Marquer ${student.nom} ${student.prenom} comme présent`}
-                                                        aria-pressed={attendanceMap[student._id] === 'Présent'}
+                                                {cameraOnlyAttendance ? (
+                                                    <span
+                                                        className={`status-pill ${getStatusPillClass(attendanceMap[student._id])}`}
+                                                        aria-label={attendanceMap[student._id] || 'Non marqué'}
                                                     >
-                                                        P
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className={`status-btn absent ${attendanceMap[student._id] === 'Absent' ? 'active' : ''}`}
-                                                        onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'Absent')}
-                                                        disabled={isFinished || !canEditAttendance}
-                                                        aria-label={`Marquer ${student.nom} ${student.prenom} comme absent`}
-                                                        aria-pressed={attendanceMap[student._id] === 'Absent'}
-                                                    >
-                                                        A
-                                                    </button>
-                                                </div>
+                                                        {attendanceMap[student._id] || '—'}
+                                                    </span>
+                                                ) : (
+                                                    <div className="status-buttons">
+                                                        <button
+                                                            type="button"
+                                                            className={`status-btn present ${attendanceMap[student._id] === 'Présent' ? 'active' : ''}`}
+                                                            onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'Présent')}
+                                                            disabled={isFinished || !canEditAttendance}
+                                                            aria-label={`Marquer ${student.nom} ${student.prenom} comme présent`}
+                                                            aria-pressed={attendanceMap[student._id] === 'Présent'}
+                                                        >
+                                                            P
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={`status-btn absent ${attendanceMap[student._id] === 'Absent' ? 'active' : ''}`}
+                                                            onClick={() => !isFinished && canEditAttendance && handleAttendanceChange(student._id, 'Absent')}
+                                                            disabled={isFinished || !canEditAttendance}
+                                                            aria-label={`Marquer ${student.nom} ${student.prenom} comme absent`}
+                                                            aria-pressed={attendanceMap[student._id] === 'Absent'}
+                                                        >
+                                                            A
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

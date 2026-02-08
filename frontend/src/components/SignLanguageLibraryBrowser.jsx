@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Modal from './ui/Modal';
 import Input from './ui/Input';
+import { usePreferences } from '../context/PreferenceContext';
 import {
   isCustomSignPhrase,
   listSupportedSignPhrases,
@@ -12,6 +13,7 @@ import {
 } from '../sign/signLanguageLibrary';
 
 function SignLanguageLibraryBrowser() {
+  const { prefs, setPrefs } = usePreferences();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [newPhrase, setNewPhrase] = useState('');
@@ -37,6 +39,10 @@ function SignLanguageLibraryBrowser() {
 
   useEffect(() => {
     globalThis.openSignLibrary = () => {
+      if (!prefs.signVideosUnlocked) {
+        setPrefs((p) => ({ ...p, assistantOnLogin: true, assistantForceCamera: true }));
+        return;
+      }
       setIsOpen(true);
       setQuery('');
       setSaveError('');
@@ -47,7 +53,7 @@ function SignLanguageLibraryBrowser() {
     return () => {
       try { delete globalThis.openSignLibrary; } catch {}
     };
-  }, []);
+  }, [prefs.signVideosUnlocked, setPrefs]);
 
   useEffect(() => {
     return subscribeSignLibraryChanged(() => setRefreshKey((k) => k + 1));
