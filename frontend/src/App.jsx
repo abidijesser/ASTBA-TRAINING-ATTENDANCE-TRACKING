@@ -6,6 +6,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import DialogContainer from './components/DialogContainer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AvatarAssistant from './components/AvatarAssistant';
+import ChatWidget from './components/ChatWidget';
 import SignLanguagePlayer from './components/SignLanguagePlayer';
 import SignLanguageLibraryBrowser from './components/SignLanguageLibraryBrowser';
 import SignSelectionHelper from './components/SignSelectionHelper';
@@ -73,6 +74,7 @@ function AppRoot() {
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
                 <AvatarAssistant />
+                <ChatWidget />
                 <SignLanguagePlayer />
                 <SignLanguageLibraryBrowser />
                 <SignSelectionHelper />

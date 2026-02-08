@@ -1,7 +1,7 @@
 // Server entry point
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -44,6 +44,7 @@ import certificationsRoutes from './routes/certifications.js';
 import usersRoutes from './routes/users.js';
 import dashboardRoutes from './routes/dashboard.js';
 import activitiesRoutes from './routes/activities.js';
+import chatRoutes from './routes/chat.js';
 
 // Configure Cloudinary AFTER environment variables are loaded
 configureCloudinary();
@@ -97,6 +98,7 @@ app.use('/api/presences', presencesRoutes);
 app.use('/api/certifications', certificationsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/activities', activitiesRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
