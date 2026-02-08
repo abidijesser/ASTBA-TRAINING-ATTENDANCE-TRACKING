@@ -28,6 +28,8 @@ function formatPercent(probability) {
 
 export default function CertificationPredictorForm() {
     const [form, setForm] = useState(initialForm);
+    const [touched, setTouched] = useState({});
+    const [submitted, setSubmitted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [apiError, setApiError] = useState('');
     const [result, setResult] = useState(null); // { certified: 0|1, probability: number }
@@ -82,11 +84,14 @@ export default function CertificationPredictorForm() {
     const onChange = (e) => {
         const { name, value } = e.target;
         setForm((prev) => ({ ...prev, [name]: value }));
+        setTouched((prev) => ({ ...prev, [name]: true }));
         setApiError('');
     };
 
     const onReset = () => {
         setForm(initialForm);
+        setTouched({});
+        setSubmitted(false);
         setApiError('');
         setResult(null);
     };
@@ -99,12 +104,15 @@ export default function CertificationPredictorForm() {
             avg_quiz_score: '78',
             engagement_score: '0.81',
         });
+        setTouched({});
+        setSubmitted(false);
         setApiError('');
         setResult(null);
     };
 
     const onSubmit = async (e) => {
         e.preventDefault();
+        setSubmitted(true);
         setApiError('');
         setResult(null);
 
@@ -176,7 +184,7 @@ export default function CertificationPredictorForm() {
                             step={def.step}
                             required
                             disabled={submitting}
-                            error={apiError ? '' : clientErrors[def.name]}
+                            error={apiError ? '' : ((submitted || touched[def.name]) ? clientErrors[def.name] : '')}
                         />
                     ))}
                 </div>
