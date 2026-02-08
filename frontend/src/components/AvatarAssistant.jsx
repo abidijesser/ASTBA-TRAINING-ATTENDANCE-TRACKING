@@ -1,6 +1,39 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePreferences } from '../context/PreferenceContext';
 import { useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
+import assistantIcon from '../assets/icons/assistant.svg';
+import deafMuteIcon from '../assets/icons/profile-deaf-mute.svg';
+import lowVisionIcon from '../assets/icons/profile-low-vision.svg';
+import cameraIcon from '../assets/icons/camera.svg';
+import speakerIcon from '../assets/icons/speaker.svg';
+
+function SmartImg({ src, fallbackSrc, alt = '', ...props }) {
+  const [currentSrc, setCurrentSrc] = useState(src);
+
+  useEffect(() => {
+    setCurrentSrc(src);
+  }, [src]);
+
+  return (
+    <img
+      {...props}
+      src={currentSrc}
+      alt={alt}
+      onError={() => {
+        if (fallbackSrc && currentSrc !== fallbackSrc) {
+          setCurrentSrc(fallbackSrc);
+        }
+      }}
+    />
+  );
+}
+
+SmartImg.propTypes = {
+  src: PropTypes.string.isRequired,
+  fallbackSrc: PropTypes.string,
+  alt: PropTypes.string,
+};
 
 function pickVoice(langCode) {
   try {
@@ -39,6 +72,7 @@ function AvatarAssistant() {
   const [caption, setCaption] = useState('');
   const [voicesReady, setVoicesReady] = useState(false);
   const [listenSign, setListenSign] = useState(false);
+  const [interpreterVideoReady, setInterpreterVideoReady] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const handsRef = useRef(null);
@@ -46,6 +80,17 @@ function AvatarAssistant() {
   const listenStartRef = useRef(0);
   const okFramesRef = useRef(0);
   const [detectedOK, setDetectedOK] = useState(false);
+
+  const images = useMemo(
+    () => ({
+      assistant: { primary: '/assistant/assistant.jpg', fallback: assistantIcon },
+      deafMute: { primary: '/assistant/profile-deaf-mute.jpg', fallback: deafMuteIcon },
+      lowVision: { primary: '/assistant/profile-low-vision.jpg', fallback: lowVisionIcon },
+      camera: { primary: '/assistant/camera.png', fallback: cameraIcon },
+      speaker: { primary: '/assistant/speaker.png', fallback: speakerIcon },
+    }),
+    []
+  );
     // Open assistant when flag set after login, even if previously dismissed
     useEffect(() => {
       if (prefs.assistantOnLogin) {
@@ -53,6 +98,22 @@ function AvatarAssistant() {
         setPrefs((p) => ({ ...p, assistantOnLogin: false }));
       }
     }, [prefs.assistantOnLogin, setPrefs]);
+
+    // If requested, start camera listening automatically
+    useEffect(() => {
+      if (!open) return;
+      if (!prefs.assistantForceCamera) return;
+      setListenSign(true);
+      setPrefs((p) => ({ ...p, assistantForceCamera: false }));
+    }, [open, prefs.assistantForceCamera, setPrefs]);
+
+    // Default behavior: camera is the Deaf+Mute indicator, so open it immediately.
+    useEffect(() => {
+      if (!open) return;
+      if (detectedOK) return;
+      if (prefs.deafMuteMode) return;
+      setListenSign(true);
+    }, [open, detectedOK, prefs.deafMuteMode]);
 
     // Show on first visit if not dismissed
     useEffect(() => {
@@ -64,16 +125,15 @@ function AvatarAssistant() {
     }, []);
   // Interpreter video per language (instead of camera listening in assistant)
   const videoByLang = useMemo(() => {
-    // External placeholder demo clips with a person signing
-    // Replace with your LSF/ASL/Arabic SL interpreter videos later
-    if (prefs.language === 'ar') {
-      return 'https://upload.wikimedia.org/wikipedia/commons/b/bf/Arab_sign_language_demo.webm';
-    }
-    if (prefs.language === 'en') {
-      return 'https://upload.wikimedia.org/wikipedia/commons/5/57/ASL_Hello_sign.webm';
-    }
+    // Default preview clip. Replace with your own LSF video later.
     return 'https://upload.wikimedia.org/wikipedia/commons/4/46/Libras_-_Oi%2C_tudo_bem%3F.webm';
-  }, [prefs.language]);
+  }, []);
+
+  // Hide interpreter preview while loading / when switching language
+  useEffect(() => {
+    if (!open) return;
+    setInterpreterVideoReady(false);
+  }, [open, videoByLang]);
 
   // Legacy options removed in favor of profile buttons
 
@@ -91,7 +151,7 @@ function AvatarAssistant() {
 
   useEffect(() => {
     if (!open) return;
-    const message = `${t('welcome')} ${t('ask')}`;
+    const message = t('chooseProfile');
     setCaption(message);
     // Autoplay policies often block auto-speak; require user click to enable
     if (prefs.voiceEnabled && voicesReady) {
@@ -100,16 +160,23 @@ function AvatarAssistant() {
   }, [open, prefs.language, t, prefs.voiceEnabled, voicesReady]);
 
   const onClose = () => {
+    setListenSign(false);
     setOpen(false);
     try { localStorage.setItem('assistantDismissed', '1'); } catch {}
     speechSynthesis.cancel();
   };
 
-  const setLanguage = (lang) => setPrefs((p) => ({ ...p, language: lang }));
+  // Force assistant question in French by default (no language selector)
+  useEffect(() => {
+    if (!open) return;
+    if (prefs.language !== 'fr') {
+      setPrefs((p) => ({ ...p, language: 'fr' }));
+    }
+  }, [open, prefs.language, setPrefs]);
 
   const enableVoice = () => {
     setPrefs((p) => ({ ...p, voiceEnabled: true }));
-    const message = `${t('welcome')} ${t('ask')}`;
+    const message = t('chooseProfile');
     speak(message, prefs.language);
   };
 
@@ -149,7 +216,16 @@ function AvatarAssistant() {
         if (okFramesRef.current >= 10) {
           setDetectedOK(true);
           setListenSign(false);
-          setPrefs((p) => ({ ...p, signLanguageMode: true, voiceEnabled: false, assistantOnLogin: false, autoStartGuided: true }));
+          setPrefs((p) => ({
+            ...p,
+            signVideosUnlocked: true,
+            signLanguageMode: true,
+            deafMuteMode: true,
+            voiceEnabled: false,
+            assistantOnLogin: false,
+            assistantForceCamera: false,
+            autoStartGuided: true,
+          }));
           try { localStorage.setItem('assistantDismissed', '1'); } catch {}
           // Show visual confirmation briefly before navigating
           setTimeout(() => {
@@ -203,7 +279,13 @@ function AvatarAssistant() {
     <dialog className="assistant-backdrop" open>
       <div className="assistant-modal">
         <div className="assistant-header">
-          <div className="assistant-avatar" aria-hidden="true">🧑‍🏫</div>
+          <SmartImg
+            className="assistant-avatar-img"
+            src={images.assistant.primary}
+            fallbackSrc={images.assistant.fallback}
+            alt=""
+            aria-hidden="true"
+          />
           <div className="assistant-title">{t('welcome')}</div>
           <button className="assistant-close" onClick={onClose} aria-label="Fermer">✕</button>
         </div>
@@ -211,46 +293,114 @@ function AvatarAssistant() {
         <div className="assistant-caption" aria-live="polite">{caption}</div>
         {!prefs.voiceEnabled && (
           <div className="assistant-language" style={{ justifyContent: 'space-between' }}>
-            <span>Le son est désactivé (politique navigateur). Activez la voix.</span>
-            <button className="assistant-btn" onClick={enableVoice}>Activer la voix</button>
+            <SmartImg
+              className="assistant-inline-icon"
+              src={images.speaker.primary}
+              fallbackSrc={images.speaker.fallback}
+              alt=""
+              aria-hidden="true"
+            />
+            <button
+              type="button"
+              className="assistant-icon-btn"
+              onClick={enableVoice}
+              aria-label={t('enableVoiceShort')}
+              title={t('enableVoiceShort')}
+            >
+              <SmartImg
+                src={images.speaker.primary}
+                fallbackSrc={images.speaker.fallback}
+                alt=""
+                aria-hidden="true"
+              />
+              <span className="sr-only">{t('enableVoiceShort')}</span>
+            </button>
           </div>
         )}
 
-        {/* Profile selection: Deaf+Mute (combined), Low-vision */}
+        {/* Profile selection: Camera (OK detection), Low-vision */}
         <div className="assistant-grid">
+          <div className="assistant-camera-tile" aria-label="Caméra (détection du geste OK)">
+            {listenSign ? (
+              <div className="camera-box assistant-camera-box" style={{ margin: 0, position: 'relative', width: '100%', height: 220 }}>
+                <video
+                  ref={videoRef}
+                  className="camera-video"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12, maxWidth: 'none' }}
+                  playsInline
+                  muted
+                />
+                <canvas
+                  ref={canvasRef}
+                  className="camera-canvas"
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: 12, maxWidth: 'none' }}
+                />
+                {detectedOK && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 12,
+                      right: 12,
+                      background: 'rgba(16,185,129,0.9)',
+                      color: '#fff',
+                      borderRadius: 12,
+                      padding: '8px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <span style={{ fontSize: 20 }}>👌</span>
+                    <span>OK</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="assistant-profile-btn"
+                onClick={() => setListenSign(true)}
+                aria-label="Activer la caméra"
+                title="Caméra"
+              >
+                <SmartImg
+                  src={images.camera.primary}
+                  fallbackSrc={images.camera.fallback}
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Caméra</span>
+              </button>
+            )}
+          </div>
           <button
-            className="assistant-btn"
+            className="assistant-profile-btn"
             onClick={() => {
-              setListenSign(true);
-            }}
-          >
-            Sourd + Muet (confirmer en signes)
-          </button>
-          <button
-            className="assistant-btn"
-            onClick={() => {
-              setPrefs((p) => ({ ...p, accessibilityMode: true, voiceEnabled: true }));
+              setPrefs((p) => ({ ...p, accessibilityMode: false, voiceEnabled: true }));
               onClose();
             }}
+            aria-label="Profil Malvoyant"
+            title="Malvoyant"
           >
-            Malvoyant
+            <SmartImg
+              src={images.lowVision.primary}
+              fallbackSrc={images.lowVision.fallback}
+              alt=""
+              aria-hidden="true"
+            />
+            <span className="sr-only">Malvoyant</span>
           </button>
-        </div>
-
-        <div className="assistant-language">
-          <span>{t('language')}:</span>
-          <div className="assistant-lang-buttons">
-            <button onClick={() => setLanguage('fr')} className={prefs.language === 'fr' ? 'active' : ''}>FR</button>
-            <button onClick={() => setLanguage('ar')} className={prefs.language === 'ar' ? 'active' : ''}>AR</button>
-            <button onClick={() => setLanguage('en')} className={prefs.language === 'en' ? 'active' : ''}>EN</button>
-          </div>
-        </div>
-
-        <div className="assistant-language" style={{ marginTop: 12 }}>
-          <span>Interprète en langue des signes (aperçu vidéo).</span>
         </div>
 
         <div className="assistant-signlang" style={{ marginTop: 8 }}>
+          {interpreterVideoReady && (
+            <div className="assistant-mini-row" style={{ marginTop: 4 }}>
+              <span />
+              <span className="sr-only">Aperçu vidéo</span>
+            </div>
+          )}
+
           <video
             controls
             width="100%"
@@ -261,69 +411,22 @@ function AvatarAssistant() {
             muted
             autoPlay
             loop
+            preload="metadata"
+            style={{ display: interpreterVideoReady ? 'block' : 'none' }}
+            onLoadedMetadata={() => setInterpreterVideoReady(true)}
+            onCanPlay={() => setInterpreterVideoReady(true)}
             onError={(e) => {
               // If the external demo fails, try a local loop clip shown by SignInterpreter
-                try { globalThis.playSign?.('welcome'); } catch {}
+              setInterpreterVideoReady(false);
+              try { globalThis.playSign?.('welcome'); } catch {}
             }}
           >
             <source src={videoByLang} type="video/webm" />
           </video>
 
-          <div className="assistant-language" style={{ marginTop: 12 }}>
-            <span>Répondez en signes: faites “OK” devant la caméra pour confirmer le profil Sourd+Muet.</span>
-            <button className="assistant-btn" onClick={() => setListenSign(true)}>Activer écoute des signes</button>
-          </div>
+          {/* Camera UI moved to the top grid (replaces Deaf+Mute button) */}
 
-          {listenSign && (
-            <div className="camera-box" style={{ marginTop: 8, position: 'relative', width: '100%', height: 260 }}>
-              <video
-                ref={videoRef}
-                className="camera-video"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }}
-                playsInline
-                muted
-              />
-              <canvas
-                ref={canvasRef}
-                className="camera-canvas"
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: 12 }}
-              />
-              {detectedOK && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 12,
-                    right: 12,
-                    background: 'rgba(16,185,129,0.9)',
-                    color: '#fff',
-                    borderRadius: 12,
-                    padding: '8px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    fontWeight: 600,
-                  }}
-                >
-                  <span style={{ fontSize: 20 }}>👌</span>
-                  <span>OK détecté</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="assistant-language" style={{ marginTop: 8 }}>
-            <button
-              className="assistant-btn"
-              onClick={() => {
-                setPrefs((p) => ({ ...p, signLanguageMode: true, voiceEnabled: true, assistantOnLogin: false, autoStartGuided: true }));
-                try { localStorage.setItem('assistantDismissed', '1'); } catch {}
-                setOpen(false);
-                navigate('/sessions');
-              }}
-            >
-              Activer mode signes pour la présence
-            </button>
-          </div>
+          {/* Removed: presence shortcut button (requested) */}
         </div>
       </div>
     </dialog>

@@ -354,14 +354,22 @@ select {
 }
 
 .assistant-modal {
-    width: min(640px, 92vw);
+    width: min(780px, 95vw);
     background: var(--color-bg-primary);
     color: var(--color-text-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
-    padding: var(--space-4);
-    max-height: 70vh;
+    padding: var(--space-5);
+    max-height: 85vh;
     overflow: auto;
+}
+
+@media (max-width: 640px) {
+    .assistant-modal {
+        width: min(96vw, 780px);
+        max-height: 92vh;
+        padding: var(--space-4);
+    }
 }
 
 .assistant-header {
@@ -373,6 +381,14 @@ select {
 
 .assistant-avatar {
     font-size: 2rem;
+}
+
+.assistant-avatar-img {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    object-fit: cover;
 }
 
 .assistant-title {
@@ -401,6 +417,43 @@ select {
     gap: var(--space-3);
 }
 
+.assistant-camera-tile {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-tertiary);
+    padding: var(--space-2);
+    min-height: 92px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.assistant-profile-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-tertiary);
+    cursor: pointer;
+    min-height: 92px;
+}
+
+.assistant-profile-btn:hover {
+    background: var(--color-bg-hover);
+}
+
+.assistant-profile-btn img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
 .assistant-btn {
     background: var(--color-primary);
     color: var(--color-text-white);
@@ -414,6 +467,43 @@ select {
     align-items: center;
     gap: var(--space-2);
     margin-top: var(--space-4);
+}
+
+.assistant-mini-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.assistant-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-tertiary);
+    cursor: pointer;
+    padding: 0;
+}
+
+.assistant-icon-btn:hover {
+    background: var(--color-bg-hover);
+}
+
+.assistant-icon-btn img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.assistant-inline-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex: 0 0 auto;
 }
 
 .assistant-lang-buttons button {

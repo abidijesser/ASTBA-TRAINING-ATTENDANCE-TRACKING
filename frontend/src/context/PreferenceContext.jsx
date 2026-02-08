@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 
 const PreferenceContext = createContext(null);
 
@@ -8,8 +9,11 @@ const defaultPrefs = {
   accessibilityMode: false,
   language: 'fr',
   signLanguageMode: false,
+  deafMuteMode: false,
+  signVideosUnlocked: false,
   voiceEnabled: false,
   assistantOnLogin: false,
+  assistantForceCamera: false,
   autoStartGuided: false,
   showInterpreterHint: false,
 };
@@ -42,6 +46,8 @@ export function PreferenceProvider({ children }) {
       fr: {
         welcome: "Bienvenue ! Pour mieux vous aider, choisissez votre profil.",
         ask: "Sélectionnez le type de besoin : Sourd, Muet, ou Malvoyant.",
+        chooseProfile: "Choisissez un profil.",
+        enableVoiceShort: "Activer la voix",
         presence: "Présences intelligentes",
         mobile: "Mode mobile",
         accessibility: "Accessibilité renforcée",
@@ -53,6 +59,8 @@ export function PreferenceProvider({ children }) {
       ar: {
         welcome: "مرحبًا! لمساعدتك بشكل أفضل، اختر نوع الاحتياج.",
         ask: "اختر: صمم (أصم)، أبكم، أو ضعيف البصر.",
+        chooseProfile: "اختر ملفًا.",
+        enableVoiceShort: "تفعيل الصوت",
         presence: "حضور ذكي",
         mobile: "وضع المحمول",
         accessibility: "وضع إمكانية الوصول",
@@ -64,6 +72,8 @@ export function PreferenceProvider({ children }) {
       en: {
         welcome: "Welcome! To help you best, choose your profile.",
         ask: "Select your need: Deaf, Non‑verbal, or Low‑vision.",
+        chooseProfile: "Choose a profile.",
+        enableVoiceShort: "Enable voice",
         presence: "Smart Attendance",
         mobile: "Mobile Mode",
         accessibility: "Accessibility Mode",
@@ -85,6 +95,10 @@ export function PreferenceProvider({ children }) {
 
   return <PreferenceContext.Provider value={value}>{children}</PreferenceContext.Provider>;
 }
+
+PreferenceProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 export function usePreferences() {
   const ctx = useContext(PreferenceContext);

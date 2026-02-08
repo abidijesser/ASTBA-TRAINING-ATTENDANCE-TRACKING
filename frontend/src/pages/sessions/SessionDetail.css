@@ -103,7 +103,7 @@
 
 .status-badge.terminee {
     background: #d1fae5;
-    color: #059669;
+    color: #065f46;
 }
 
 .finished-message {
@@ -111,4 +111,42 @@
     font-weight: 600;
     display: flex;
     align-items: center;
+}
+
+.session-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 88px;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-tertiary);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.status-pill.present {
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: #fff;
+}
+
+.status-pill.absent {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+    color: #fff;
+}
+
+.status-pill.unmarked {
+    opacity: 0.85;
+    color: var(--color-text-secondary);
 }
