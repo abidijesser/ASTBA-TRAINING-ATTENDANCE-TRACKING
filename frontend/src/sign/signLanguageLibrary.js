@@ -54,8 +54,71 @@ export const signLanguageLibrary = {
     language: "LSF",
     source: "commons.wikimedia.org",
   },
+  "Student List": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/8/82/LL-Q33302_%28fsl%29-Laura_Jauvert-%C3%89l%C3%A8ve.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "STUDENT LIST": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/8/82/LL-Q33302_%28fsl%29-Laura_Jauvert-%C3%89l%C3%A8ve.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
   "Historique": {
     videoUrl: "https://upload.wikimedia.org/wikipedia/commons/a/ab/LL-Q33302_%28fsl%29-Laura_Jauvert-Polonais_%28langue%29.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+
+  // Common table headers / dashboard labels (English/all-caps variants)
+  // Note: These are pragmatic defaults (not perfect translations) to avoid “not available” UX.
+  "Description": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/4/40/LL-Q33302_%28fsl%29-Laura_Jauvert-Capter_des_mots.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "DESCRIPTION": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/4/40/LL-Q33302_%28fsl%29-Laura_Jauvert-Capter_des_mots.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "Duration": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/LL-Q33302_%28fsl%29-Laura_Jauvert-Quand_%3F.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "DURATION": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/LL-Q33302_%28fsl%29-Laura_Jauvert-Quand_%3F.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "Durée": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/LL-Q33302_%28fsl%29-Laura_Jauvert-Quand_%3F.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "Start Date": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/LL-Q33302_%28fsl%29-Laura_Jauvert-Quand_%3F.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "START DATE": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/LL-Q33302_%28fsl%29-Laura_Jauvert-Quand_%3F.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "Date de début": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/LL-Q33302_%28fsl%29-Laura_Jauvert-Quand_%3F.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "Monthly Goal": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/LL-Q33302_%28fsl%29-Laura_Jauvert-Quand_%3F.webm",
+    language: "LSF",
+    source: "commons.wikimedia.org",
+  },
+  "MONTHLY GOAL": {
+    videoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/LL-Q33302_%28fsl%29-Laura_Jauvert-Quand_%3F.webm",
     language: "LSF",
     source: "commons.wikimedia.org",
   },
@@ -132,6 +195,39 @@ export function normalizePhraseExact(phrase) {
   const trimmed = String(phrase || '').trim();
   if (!trimmed) return '';
   return trimmed.split(/\s+/).join(' ');
+}
+
+function stripOuterQuotes(text) {
+  const s = String(text || '').trim();
+  if (!s) return '';
+  const pairs = [
+    ['"', '"'],
+    ["'", "'"],
+    ['`', '`'],
+    ['“', '”'],
+    ['„', '“'],
+    ['«', '»'],
+    ['‹', '›'],
+  ];
+  for (const [l, r] of pairs) {
+    if (s.startsWith(l) && s.endsWith(r) && s.length >= 2) {
+      return s.slice(l.length, s.length - r.length).trim();
+    }
+  }
+  return s;
+}
+
+function stripTrailingPunctuation(text) {
+  return String(text || '')
+    .trim()
+    .replace(/[\s\u00A0]+/g, ' ')
+    .replace(/[.:,;!?]+$/g, '')
+    .trim();
+}
+
+function normalizeForLooseLookup(phrase) {
+  const cleaned = stripTrailingPunctuation(stripOuterQuotes(phrase));
+  return normalizePhraseExact(cleaned);
 }
 
 function safeParseJson(text) {
@@ -211,7 +307,32 @@ export function getSignEntryForPhrase(phrase) {
   const key = normalizePhraseExact(phrase);
   if (!key) return null;
   const lib = getRuntimeSignLibrary();
-  return lib[key] ? { phrase: key, ...lib[key] } : null;
+
+  // 1) Exact match
+  if (lib[key]) return { phrase: key, ...lib[key] };
+
+  // 2) Loose normalization (quotes/punctuation)
+  const looseKey = normalizeForLooseLookup(key);
+  if (looseKey && lib[looseKey]) return { phrase: looseKey, ...lib[looseKey] };
+
+  // 3) Case-insensitive match (common for table headers like DESCRIPTION)
+  const wanted = String(looseKey || key).toLowerCase();
+  const foundKey = Object.keys(lib).find((k) => String(k).toLowerCase() === wanted);
+  if (foundKey) return { phrase: foundKey, ...lib[foundKey] };
+
+  // 4) Heuristic aliases for frequent UI headers
+  const aliasMap = {
+    description: 'Description',
+    duration: 'Duration',
+    'start date': 'Start Date',
+    startdate: 'Start Date',
+    'monthly goal': 'Monthly Goal',
+    'student list': 'Student List',
+  };
+  const aliasKey = aliasMap[wanted.replace(/\s+/g, ' ').trim()];
+  if (aliasKey && lib[aliasKey]) return { phrase: aliasKey, ...lib[aliasKey] };
+
+  return null;
 }
 
 export function hasSignVideoForPhrase(phrase) {
