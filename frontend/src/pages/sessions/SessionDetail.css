@@ -102,8 +102,8 @@
 }
 
 .status-badge.terminee {
-    background: #d1fae5;
-    color: #065f46;
+    background: var(--color-success-light);
+    color: var(--color-success);
 }
 
 .finished-message {

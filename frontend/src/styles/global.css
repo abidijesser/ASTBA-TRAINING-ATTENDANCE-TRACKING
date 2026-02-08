@@ -25,6 +25,7 @@ body {
     line-height: 1.5;
     color: var(--color-text-primary);
     background-color: var(--color-bg-secondary);
+    transition: background-color var(--transition), color var(--transition);
 }
 
 /* Typography */
@@ -329,40 +330,57 @@ select {
    - Uses a widely adopted colorblind-safe palette inspired by Okabe-Ito.
    - Works by overriding the existing design tokens (CSS variables) so most UI updates automatically.
    - Toggle by adding/removing the `colorblind-friendly` class on the app root (see App.jsx).
+
+    Normal palette (see variables.css):
+    - Primary:  #3B82F6
+    - Success:  #10B981 (green)
+    - Warning:  #F59E0B
+    - Danger:   #EF4444 (red)
+
+    Colorblind-friendly (optimized for red-green CVD: protanopia/deuteranopia):
+    - Primary:  #0B4F9F (blue)
+    - Success:  #0072B2 (blue)   -> replaces green
+    - Warning:  #E69F00 (orange)
+    - Danger:   #CC79A7 (purple) -> replaces red
 */
 .colorblind-friendly {
-    /* Keep neutral surfaces; focus on distinct accent colors */
-    --color-bg-primary: #ffffff;
-    --color-bg-secondary: #f8fafc;
-    --color-bg-tertiary: #f1f5f9;
-    --color-bg-hover: #eaf0f6;
+        /*
+            Make the mode *visibly* different (remarkable):
+            - Use a warm, high-contrast neutral background (not green/red tinted)
+            - Keep text very dark for readability
+            This helps users instantly notice the mode switch.
+        */
+        --color-bg-primary: #ffffff;
+        --color-bg-secondary: #fff7e6; /* warm cream */
+        --color-bg-tertiary: #ffefd1;  /* slightly deeper warm */
+        --color-bg-hover: #ffe3ad;     /* noticeable hover */
 
     --color-text-primary: #0f172a;
     --color-text-secondary: #334155;
     --color-text-tertiary: #64748b;
     --color-text-white: #ffffff;
 
-    --color-border: #d0d7de;
-    --color-border-light: #e6edf3;
-    --color-border-dark: #b6c2cf;
+    --color-border: #e5cfa1;
+    --color-border-light: #f1deb9;
+    --color-border-dark: #d6bb7f;
 
-    /* Accents: Okabe-Ito-inspired (distinct under common CVD types) */
-    --color-primary: #0072B2;         /* blue */
-    --color-primary-dark: #005A8D;
+    /* Accents (red/green-safe) */
+    --color-primary: #0B4F9F;         /* blue */
+    --color-primary-dark: #083B76;
     --color-primary-light: #56B4E9;   /* sky blue */
-    --color-primary-lightest: #D7EFFB;
+    --color-primary-lightest: #ffe3ad; /* warm highlight for active states */
 
-    --color-success: #009E73;         /* bluish green */
-    --color-success-light: #C7F1E4;
+    /* Status colors (avoid red/green pairing) */
+    --color-success: #0072B2;         /* blue (success) */
+    --color-success-light: #D7EFFB;
 
-    /* Warning: use orange (yellow can fail contrast on white) */
-    --color-warning: #E69F00;         /* orange */
+    --color-warning: #E69F00;         /* orange (warning) */
     --color-warning-light: #FFF0C7;
 
-    --color-danger: #D55E00;          /* vermillion */
-    --color-danger-light: #FFE0CF;
+    --color-danger: #CC79A7;          /* purple (danger) */
+    --color-danger-light: #F6D7E7;
 
-    --color-info: #56B4E9;            /* sky blue */
+    --color-info: #56B4E9;            /* sky blue (info) */
     --color-info-light: #D7EFFB;
 }
 
@@ -484,6 +502,12 @@ select {
 
 .assistant-profile-btn:hover {
     background: var(--color-bg-hover);
+}
+
+.assistant-profile-btn.active {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+    background: var(--color-primary-lightest);
 }
 
 .assistant-profile-btn img {

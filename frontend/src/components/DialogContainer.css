@@ -71,15 +71,15 @@
 }
 
 .dialog-icon-alert {
-    background: linear-gradient(135deg, #4169e1 0%, #2558d0 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
 }
 
 .dialog-icon-success {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    background: linear-gradient(135deg, var(--color-success) 0%, color-mix(in srgb, var(--color-success) 70%, #000) 100%);
 }
 
 .dialog-icon-error {
-    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    background: linear-gradient(135deg, var(--color-danger) 0%, color-mix(in srgb, var(--color-danger) 70%, #000) 100%);
 }
 
 .dialog-icon-confirm {
@@ -141,15 +141,15 @@
 
 .dialog-btn-close,
 .dialog-btn-confirm {
-    background: linear-gradient(135deg, #4169e1 0%, #2558d0 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: white;
-    box-shadow: 0 2px 8px rgba(65, 105, 225, 0.3);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 .dialog-btn-close:hover,
 .dialog-btn-confirm:hover {
-    background: linear-gradient(135deg, #2558d0 0%, #1a3ba8 100%);
-    box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, color-mix(in srgb, var(--color-primary-dark) 72%, #000) 100%);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 
 .dialog-btn-cancel {
@@ -165,11 +165,11 @@
 
 /* Dialog Type Styling */
 .dialog-success {
-    border-left: 4px solid #48bb78;
+    border-left: 4px solid var(--color-success);
 }
 
 .dialog-error {
-    border-left: 4px solid #f56565;
+    border-left: 4px solid var(--color-danger);
 }
 
 .dialog-confirm {
@@ -177,7 +177,7 @@
 }
 
 .dialog-alert {
-    border-left: 4px solid #4169e1;
+    border-left: 4px solid var(--color-primary);
 }
 
 /* Responsive Design */

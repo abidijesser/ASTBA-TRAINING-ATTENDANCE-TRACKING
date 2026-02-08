@@ -23,20 +23,20 @@
 }
 
 .btn-new {
-    background: linear-gradient(135deg, var(--color-primary) 0%, #2558d0 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: white;
     padding: var(--space-3) var(--space-5);
     border-radius: var(--radius-md);
     font-weight: 600;
     font-size: var(--text-base);
     transition: all var(--transition-fast);
-    box-shadow: 0 2px 8px rgba(65, 105, 225, 0.3);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 .btn-new:hover {
-    background: linear-gradient(135deg, #2558d0 0%, #1a3ba8 100%);
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, color-mix(in srgb, var(--color-primary-dark) 72%, #000) 100%);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 
 .search-card {

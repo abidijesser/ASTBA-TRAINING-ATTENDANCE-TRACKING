@@ -404,7 +404,7 @@ function SignAvatar() {
           />
           <button
             onClick={() => globalThis.playGlossText?.(controlsText)}
-            style={{ padding: '6px 10px', borderRadius: 8, background: '#2563eb', color: '#fff', border: 'none' }}
+            style={{ padding: '6px 10px', borderRadius: 8, background: 'var(--color-primary-dark)', color: '#fff', border: 'none' }}
           >Voir en signes</button>
           <button
             onClick={() => setControlsOpen(false)}
@@ -416,9 +416,9 @@ function SignAvatar() {
         <div
           style={{ position: 'absolute', left: 8, bottom: 8, display: 'flex', gap: 6 }}
         >
-          <button onClick={() => globalThis.playSignAvatar?.('confirmprofile')} style={{ padding: '6px 8px', borderRadius: 8, background: '#16a34a', color: '#fff', border: 'none' }}>👌 OK</button>
+          <button onClick={() => globalThis.playSignAvatar?.('confirmprofile')} style={{ padding: '6px 8px', borderRadius: 8, background: 'var(--color-success)', color: '#fff', border: 'none' }}>👌 OK</button>
           <button onClick={() => globalThis.playSignAvatar?.('presencerecorded')} style={{ padding: '6px 8px', borderRadius: 8, background: '#f59e0b', color: '#111827', border: 'none' }}>✊ Présent</button>
-          <button onClick={() => globalThis.playGlossText?.('absent')} style={{ padding: '6px 8px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none' }}>🖐️ Absent</button>
+          <button onClick={() => globalThis.playGlossText?.('absent')} style={{ padding: '6px 8px', borderRadius: 8, background: 'var(--color-danger)', color: '#fff', border: 'none' }}>🖐️ Absent</button>
           <button onClick={() => setControlsOpen(true)} style={{ padding: '6px 8px', borderRadius: 8, background: '#334155', color: '#fff', border: 'none' }}>+ Phrase</button>
         </div>
       )}

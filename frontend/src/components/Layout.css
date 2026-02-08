@@ -146,6 +146,41 @@
     margin-bottom: var(--space-4);
 }
 
+/* Top bar controls (languages + accessibility toggles) */
+.topbar-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    background: transparent;
+    border: 0;
+    margin: 0;
+    min-inline-size: auto;
+}
+
+.topbar-btn {
+    appearance: none;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.topbar-btn:hover {
+    background: var(--color-bg-hover);
+}
+
+.topbar-btn.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-text-white);
+}
+
 .page-content {
     flex: 1;
 }

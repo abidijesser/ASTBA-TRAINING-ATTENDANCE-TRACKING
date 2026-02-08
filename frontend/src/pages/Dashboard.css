@@ -248,14 +248,14 @@
 .bar {
     width: 100%;
     max-width: 40px;
-    background: linear-gradient(180deg, #4169e1, #5b7df5);
+    background: linear-gradient(180deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 78%, #fff));
     border-radius: 6px 6px 0 0;
     transition: all 0.3s ease;
     cursor: pointer;
 }
 
 .bar:hover {
-    background: linear-gradient(180deg, #316cdb, #4169e1);
+    background: linear-gradient(180deg, var(--color-primary-dark), var(--color-primary));
     transform: scaleY(1.05);
 }
 
@@ -295,8 +295,8 @@
 .filter-input:focus,
 .date-select:focus {
     outline: none;
-    border-color: #4169e1;
-    box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.1);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 16%, transparent);
 }
 
 .statistics-content {
@@ -377,7 +377,7 @@
 
 .progress-increase {
     font-size: 0.875rem;
-    color: #48bb78;
+    color: var(--color-success);
     font-weight: 600;
 }
 
@@ -419,7 +419,7 @@
 }
 
 .target-stat-value.absent {
-    color: #e53e3e;
+    color: var(--color-danger);
 }
 
 .target-stat-change {
@@ -427,13 +427,13 @@
     font-size: 0.875rem;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
-    color: #cb2431;
-    background: #ffeef0;
+    color: var(--color-danger);
+    background: var(--color-danger-light);
 }
 
 .target-stat-change.positive {
-    color: #22863a;
-    background: #f0f7e4;
+    color: var(--color-success);
+    background: var(--color-success-light);
 }
 
 /* Actions Card */
@@ -474,7 +474,7 @@
 
 .action-link:hover {
     background: #edf2f7;
-    color: #4169e1;
+    color: var(--color-primary);
     transform: translateX(4px);
 }
 

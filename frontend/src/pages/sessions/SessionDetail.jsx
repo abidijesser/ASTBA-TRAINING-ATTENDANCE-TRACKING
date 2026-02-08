@@ -221,9 +221,9 @@ const SessionDetail = () => {
             try {
                 return getComputedStyle(document.documentElement)
                     .getPropertyValue('--color-primary')
-                    .trim() || '#3B82F6';
+                    .trim() || '#111827';
             } catch {
-                return '#3B82F6';
+                return '#111827';
             }
         };
         const onResults = (results) => {
@@ -450,7 +450,9 @@ const SessionDetail = () => {
                                         position: 'absolute',
                                         top: 12,
                                         right: 12,
-                                        background: gestureIndicator === 'present' ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.9)',
+                                        background: gestureIndicator === 'present'
+                                            ? 'color-mix(in srgb, var(--color-success) 88%, transparent)'
+                                            : 'color-mix(in srgb, var(--color-danger) 88%, transparent)',
                                         color: '#fff',
                                         borderRadius: 12,
                                         padding: '8px 12px',

@@ -108,15 +108,15 @@
 }
 
 .timeline-marker.activity-create {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    background: linear-gradient(135deg, var(--color-success) 0%, color-mix(in srgb, var(--color-success) 70%, #000) 100%);
 }
 
 .timeline-marker.activity-update {
-    background: linear-gradient(135deg, #4169e1 0%, #2558d0 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
 }
 
 .timeline-marker.activity-delete {
-    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    background: linear-gradient(135deg, var(--color-danger) 0%, color-mix(in srgb, var(--color-danger) 70%, #000) 100%);
 }
 
 .timeline-marker.activity-login {
@@ -128,7 +128,7 @@
 }
 
 .timeline-marker.activity-download {
-    background: linear-gradient(135deg, #38b6ff 0%, #0284c7 100%);
+    background: linear-gradient(135deg, var(--color-info) 0%, color-mix(in srgb, var(--color-info) 70%, #000) 100%);
 }
 
 .timeline-marker.activity-upload {
@@ -215,15 +215,15 @@
 }
 
 .activity-badge.activity-create {
-    background: #48bb78;
+    background: var(--color-success);
 }
 
 .activity-badge.activity-update {
-    background: #4169e1;
+    background: var(--color-primary);
 }
 
 .activity-badge.activity-delete {
-    background: #f56565;
+    background: var(--color-danger);
 }
 
 .activity-badge.activity-login {
@@ -235,7 +235,7 @@
 }
 
 .activity-badge.activity-download {
-    background: #38b6ff;
+    background: var(--color-info);
 }
 
 .activity-badge.activity-upload {

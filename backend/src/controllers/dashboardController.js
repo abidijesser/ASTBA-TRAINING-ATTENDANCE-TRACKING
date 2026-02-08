@@ -69,7 +69,32 @@ async function getScopedFormationIds(user) {
     // Admin + Responsable: global visibility on dashboard analytics.
     // (In many deployments the dashboard is a management view; scoping can be reintroduced if needed.)
     if (user?.role === 'admin' || user?.role === 'responsable') return null;
-    // formateur: only assigned formations
+
+    // formateur: prefer explicit assignments, otherwise infer from their sessions
+    if (user?.role === 'formateur') {
+        const assigned = Array.isArray(user?.formations_assignees) ? user.formations_assignees : [];
+        if (assigned.length > 0) return assigned;
+
+        // Fallback: if formations were not explicitly assigned in the User document,
+        // infer scope from the formateur's own sessions (Seance -> Niveau -> Formation).
+        // This prevents the dashboard from showing misleading 0s while data exists.
+        const inferred = await Seance.aggregate([
+            { $match: { formateur_id: { $in: idVariants(user._id) } } },
+            {
+                $lookup: {
+                    from: 'niveaux',
+                    localField: 'niveau_id',
+                    foreignField: '_id',
+                    as: 'niveau',
+                },
+            },
+            { $unwind: '$niveau' },
+            { $group: { _id: '$niveau.formation_id' } },
+            { $project: { _id: 1 } },
+        ]);
+        return inferred.map((x) => x._id).filter(Boolean);
+    }
+
     return Array.isArray(user?.formations_assignees) ? user.formations_assignees : [];
 }
 
@@ -391,7 +416,7 @@ export const getDashboardAnalytics = async (req, res, next) => {
             ];
 
             if (req.user.role === 'formateur') {
-                pipeline.push({ $match: { 'seance.formateur_id': req.user._id } });
+                pipeline.push({ $match: { 'seance.formateur_id': { $in: idVariants(req.user._id) } } });
             }
             if (Array.isArray(formationIds)) {
                 if (formationIds.length === 0) {

@@ -190,9 +190,9 @@ function AvatarAssistant() {
       try {
         return getComputedStyle(document.documentElement)
           .getPropertyValue('--color-primary')
-          .trim() || '#3B82F6';
+          .trim() || '#111827';
       } catch {
-        return '#3B82F6';
+        return '#111827';
       }
     };
     const onResults = (results) => {
@@ -350,7 +350,7 @@ function AvatarAssistant() {
                       position: 'absolute',
                       top: 12,
                       right: 12,
-                      background: 'rgba(16,185,129,0.9)',
+                      background: 'color-mix(in srgb, var(--color-success) 88%, transparent)',
                       color: '#fff',
                       borderRadius: 12,
                       padding: '8px 12px',
@@ -384,15 +384,17 @@ function AvatarAssistant() {
             )}
           </div>
           <button
-            className="assistant-profile-btn"
+            className={`assistant-profile-btn ${prefs.colorblindMode ? 'active' : ''}`}
             onClick={() => {
-              // Toggle colorblind-friendly mode (palette designed for common CVD types).
-              // Click again (re-open assistant) to return to normal mode.
-              setPrefs((p) => ({ ...p, colorblindMode: !p.colorblindMode, voiceEnabled: true }));
+              // Bouton "œil" (à droite) :
+              // Active le mode daltonisme RG (protanopie/deutéranopie) puis ferme la popup
+              // pour que l'utilisateur navigue sur le site avec une palette adaptée.
+              // La classe `colorblind-friendly` est appliquée sur <html> (voir App.jsx).
+              setPrefs((p) => ({ ...p, colorblindMode: true, voiceEnabled: true }));
               onClose();
             }}
-            aria-label="Profil Malvoyant"
-            title="Malvoyant"
+            aria-label="Activer le mode daltonisme (RG)"
+            title="Activer le mode daltonisme (RG)"
           >
             <SmartImg
               src={images.lowVision.primary}
@@ -400,7 +402,7 @@ function AvatarAssistant() {
               alt=""
               aria-hidden="true"
             />
-            <span className="sr-only">Malvoyant</span>
+            <span className="sr-only">Activer le mode daltonisme (RG)</span>
           </button>
         </div>
 

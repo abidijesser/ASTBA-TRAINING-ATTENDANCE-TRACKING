@@ -42,7 +42,7 @@ function SignSelectionHelper() {
         zIndex: 2000,
         padding: '6px 10px',
         borderRadius: 8,
-        background: '#2563eb',
+        background: 'var(--color-primary-dark)',
         color: '#fff',
         border: 'none',
         boxShadow: '0 8px 24px rgba(0,0,0,0.18)'

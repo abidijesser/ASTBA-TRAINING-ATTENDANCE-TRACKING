@@ -1,6 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { usePreferences } from '../context/PreferenceContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import './Layout.css';
 
@@ -11,10 +12,17 @@ import './Layout.css';
 const Layout = () => {
     const { user, logout, isResponsable } = useAuth();
     const { t } = useLanguage();
+    const { setPrefs } = usePreferences();
     const navigate = useNavigate();
     const location = useLocation();
 
     const handleLogout = async () => {
+        // On logout, always return to the normal color palette.
+        // (Colorblind-friendly mode is meant for authenticated usage after choosing the eye-button profile.)
+        setPrefs((p) => ({ ...p, colorblindMode: false }));
+        try {
+            document.documentElement.classList.remove('colorblind-friendly');
+        } catch {}
         await logout();
         navigate('/login');
     };

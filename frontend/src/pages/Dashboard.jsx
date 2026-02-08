@@ -79,10 +79,10 @@ const Dashboard = () => {
 
     const attendanceByStatusChartData = useMemo(() => {
         const items = [
-            { name: t('presence.status.present'), value: attendance.byStatus.present || 0, color: '#48bb78' },
-            { name: t('presence.status.absent'), value: attendance.byStatus.absent || 0, color: '#e53e3e' },
+            { name: t('presence.status.present'), value: attendance.byStatus.present || 0, color: 'var(--color-success)' },
+            { name: t('presence.status.absent'), value: attendance.byStatus.absent || 0, color: 'var(--color-danger)' },
             { name: t('presence.status.retard'), value: attendance.byStatus.retard || 0, color: '#f6ad55' },
-            { name: t('presence.status.justifie'), value: attendance.byStatus.justifie || 0, color: '#4299e1' },
+            { name: t('presence.status.justifie'), value: attendance.byStatus.justifie || 0, color: 'var(--color-info)' },
         ];
         return items.filter((x) => x.value > 0);
     }, [attendance.byStatus.absent, attendance.byStatus.justifie, attendance.byStatus.present, attendance.byStatus.retard, t]);
@@ -103,7 +103,7 @@ const Dashboard = () => {
                 <YAxis allowDecimals={false} />
                 <Tooltip />
                 <Legend />
-                <Bar name={t('nav.sessions')} dataKey="sessions" fill="#4169e1" radius={[6, 6, 0, 0]} />
+                <Bar name={t('nav.sessions')} dataKey="sessions" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
             </BarChart>
         </ResponsiveContainer>
     );
@@ -121,7 +121,7 @@ const Dashboard = () => {
                     cy="50%"
                     outerRadius={100}
                     label
-                    fill="#4169e1"
+                    fill="var(--color-primary)"
                 >
                     {attendanceByStatusChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -139,7 +139,7 @@ const Dashboard = () => {
                 <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
                 <Tooltip formatter={(v, n) => (n === 'attendanceRate' ? `${Math.round(Number(v) * 100)}%` : v)} />
                 <Legend />
-                <Bar name={t('dashboard.attendanceRate')} dataKey="attendanceRate" fill="#48bb78" radius={[0, 6, 6, 0]} />
+                <Bar name={t('dashboard.attendanceRate')} dataKey="attendanceRate" fill="var(--color-success)" radius={[0, 6, 6, 0]} />
             </BarChart>
         </ResponsiveContainer>
     );
@@ -386,8 +386,8 @@ const Dashboard = () => {
                             <svg viewBox="0 0 120 120" className="progress-circle">
                                 <defs>
                                     <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" stopColor="#48bb78" />
-                                        <stop offset="100%" stopColor="#4169e1" />
+                                        <stop offset="0%" stopColor="var(--color-success)" />
+                                        <stop offset="100%" stopColor="var(--color-primary)" />
                                     </linearGradient>
                                 </defs>
                                 <circle cx="60" cy="60" r="54" className="progress-bg"></circle>

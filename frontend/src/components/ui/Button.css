@@ -23,7 +23,7 @@
 
 .btn-sign-supported {
     position: relative;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.22) inset;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 22%, transparent) inset;
 }
 
 /* Sizes */
@@ -71,7 +71,7 @@
 }
 
 .btn-success:hover:not(:disabled) {
-    background: #059669;
+    background: color-mix(in srgb, var(--color-success) 85%, #000);
     transform: translateY(-1px);
 }
 
@@ -81,7 +81,7 @@
 }
 
 .btn-danger:hover:not(:disabled) {
-    background: #DC2626;
+    background: color-mix(in srgb, var(--color-danger) 85%, #000);
     transform: translateY(-1px);
 }
 

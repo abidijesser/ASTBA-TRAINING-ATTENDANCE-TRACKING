@@ -83,8 +83,8 @@
 }
 
 .level-status-badge.completed {
-    background: #d1fae5;
-    color: #059669;
+    background: var(--color-success-light);
+    color: var(--color-success);
 }
 
 .level-status-badge.active {
